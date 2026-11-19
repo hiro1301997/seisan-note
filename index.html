@@ -561,7 +561,7 @@
     // ・悪用対策として Firebase App Check（reCAPTCHA Enterprise）を併用します
     //   サイトキーは「公開キー」なので、ここに埋め込んでも問題ありません
     // =========================================================================
-    const GEMINI_MODEL_NAME = 'gemini-3.8-flash';
+    const GEMINI_MODEL_NAME = 'gemini-3.5-flash-lite';
     const RECAPTCHA_ENTERPRISE_SITE_KEY = '6LdsBCcuAAAAAMdVBH-iSQZY4MjGRpL5wk1IyItA'; // App Check（reCAPTCHA Enterprise）サイトキー ※公開キー
 
     const AI_SYSTEM_INSTRUCTION = [
@@ -2085,7 +2085,7 @@
           updateAiStatusBar();
           const local = await generateLocalAssistantResponse(userMessage);
           return {
-            text: `（Geminiに接続できなかったため、ローカル集計でお答えします）\n［診断情報: ${String(e && e.message ? e.message : e)}］\n\n${local.text}`,
+            text: `（Geminiに接続できなかったため、ローカル集計でお答えします）\n\n${local.text}`,
             copyableText: local.copyableText
           };
         }
