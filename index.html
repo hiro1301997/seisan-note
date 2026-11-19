@@ -9,7 +9,8 @@
   <meta name="apple-mobile-web-app-title" content="精算ノート">
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="theme-color" content="#ffffff">
-  <link id="appleTouchIcon" rel="apple-touch-icon" href="">
+  <link id="appleTouchIcon" rel="apple-touch-icon" href="apple-touch-icon.png">
+  <link rel="icon" type="image/png" href="apple-touch-icon.png">
   <title>精算ノート</title>
   <!-- Tailwind CSS -->
   <script src="https://cdn.tailwindcss.com"></script>
@@ -2225,19 +2226,8 @@
     // 起動
     (function setupAppIcon() {
       try {
-        const canvas = document.createElement('canvas');
-        canvas.width = 180;
-        canvas.height = 180;
-        const ctx = canvas.getContext('2d');
-        ctx.fillStyle = '#10b981';
-        ctx.fillRect(0, 0, 180, 180);
-        ctx.fillStyle = '#ffffff';
-        ctx.font = 'bold 84px sans-serif';
-        ctx.textAlign = 'center';
-        ctx.textBaseline = 'middle';
-        ctx.fillText('¥', 90, 94);
         const iconLink = document.getElementById('appleTouchIcon');
-        if (iconLink) iconLink.href = canvas.toDataURL('image/png');
+        if (iconLink) iconLink.href = 'apple-touch-icon.png';
       } catch (e) {}
     })();
 
