@@ -1,0 +1,2219 @@
+<!DOCTYPE html>
+<html lang="ja" translate="no" class="notranslate">
+<head>
+  <meta charset="UTF-8">
+  <meta name="google" content="notranslate">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-title" content="精算ノート">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="theme-color" content="#ffffff">
+  <link id="appleTouchIcon" rel="apple-touch-icon" href="">
+  <title>精算ノート</title>
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- FontAwesome Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    body {
+      -webkit-tap-highlight-color: transparent;
+      user-select: none;
+    }
+    input, select, textarea, button {
+      user-select: auto;
+    }
+  </style>
+</head>
+<body translate="no" class="notranslate bg-slate-100 text-slate-800 font-sans min-h-screen pb-24 antialiased">
+
+  <!-- TOP HEADER -->
+  <header class="sticky top-0 z-40 bg-white/95 backdrop-blur-md border-b border-slate-200 px-4 py-3 shadow-xs">
+    <div class="max-w-md mx-auto flex items-center justify-between">
+      <div class="flex items-center gap-2">
+        <div class="w-8 h-8 rounded-full bg-emerald-500 text-white flex items-center justify-center font-black text-sm shadow">
+          <i class="fa-solid fa-receipt"></i>
+        </div>
+        <div>
+          <h1 id="appHeaderTitle" class="text-base font-bold text-slate-900 leading-tight">精算ノート</h1>
+          <div class="flex items-center gap-1.5 text-xs text-slate-500">
+            <span id="syncPulse" class="inline-block w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+            <span id="roomStatusText">クラウド同期中</span>
+          </div>
+        </div>
+      </div>
+      <div class="flex items-center gap-1.5">
+        <button id="btnOpenRoomsModal" class="text-xs bg-slate-100 hover:bg-slate-200 text-slate-700 px-2.5 py-1.5 rounded-lg font-medium border border-slate-300 flex items-center gap-1">
+          <i class="fa-solid fa-door-open text-emerald-600"></i>
+          <span>ルーム</span>
+        </button>
+        <button id="btnShareRoom" class="text-slate-600 hover:text-slate-900 p-2 rounded-lg bg-slate-50 border border-slate-200" title="ルーム共有URL">
+          <i class="fa-solid fa-share-nodes text-base text-emerald-600"></i>
+        </button>
+        <button id="btnOpenSettings" class="text-slate-600 hover:text-slate-900 p-2 rounded-lg bg-slate-50 border border-slate-200" title="設定">
+          <i class="fa-solid fa-gear text-base"></i>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- MAIN CONTAINER -->
+  <main class="max-w-md mx-auto px-3.5 pt-3 space-y-3.5">
+
+    <!-- SETTLEMENT HERO CARD -->
+    <section class="bg-white rounded-2xl p-4 shadow-sm border border-slate-200">
+      <div class="flex justify-between items-center mb-2">
+        <span class="text-xs font-bold text-slate-500 uppercase tracking-wide flex items-center gap-1.5">
+          <i class="fa-solid fa-scale-balanced text-emerald-600"></i>
+          現在の精算状況
+        </span>
+        <button id="btnOpenAiChat" class="text-xs bg-emerald-50 text-emerald-700 hover:bg-emerald-100 active:bg-emerald-200 border border-emerald-200 font-bold px-2.5 py-1 rounded-full flex items-center gap-1 transition-colors shadow-2xs">
+          <span>AIアシスタント💬</span>
+        </button>
+      </div>
+
+      <!-- Main Balance Highlight -->
+      <div id="balanceMainDisplay" class="bg-emerald-50/60 rounded-xl p-3.5 border border-emerald-200 text-center mb-3">
+        <p class="text-xs font-medium text-slate-500 mb-1">現在の差額精算</p>
+        <div id="settlementActionText" class="text-base font-black text-slate-800 tracking-tight">
+          現在、差額はありません（¥0）
+        </div>
+        <div id="settlementSubText" class="text-xs text-slate-500 mt-1">
+          立て替えが均等、またはデータがありません
+        </div>
+      </div>
+
+      <!-- Quick Total Stats -->
+      <div class="grid grid-cols-3 gap-2 text-center pt-1 border-t border-slate-100">
+        <div class="bg-blue-50/70 p-2 rounded-xl border border-blue-100">
+          <div id="labelP1Name" class="text-[11px] font-bold text-blue-700 truncate">自分</div>
+          <div id="statP1Paid" class="text-sm font-extrabold text-blue-900 mt-0.5">¥0</div>
+          <div class="text-[10px] text-blue-500 font-semibold">支出合計</div>
+        </div>
+        <div class="bg-orange-50/70 p-2 rounded-xl border border-orange-100">
+          <div id="labelP2Name" class="text-[11px] font-bold text-orange-700 truncate">友達A</div>
+          <div id="statP2Paid" class="text-sm font-extrabold text-orange-900 mt-0.5">¥0</div>
+          <div class="text-[10px] text-orange-500 font-semibold">支出合計</div>
+        </div>
+        <div id="cardTotalSpent" class="bg-slate-50 hover:bg-slate-100 active:bg-slate-200 p-2 rounded-xl border border-slate-200 cursor-pointer transition-colors relative flex flex-col justify-between text-center">
+          <div class="text-[10px] font-bold text-slate-500 truncate flex items-center justify-center gap-1">
+            <span>支払い詳細</span>
+            <i class="fa-solid fa-chevron-right text-[9px] text-slate-400"></i>
+          </div>
+          <div id="statTotalSpent" class="text-xs font-black text-slate-800 mt-0.5 leading-tight truncate">--</div>
+          <div id="statCashSummarySub" class="text-[9px] text-emerald-700 font-bold flex items-center justify-center gap-0.5 mt-0.5 truncate">
+            <span>多く現金決済</span>
+            <i class="fa-solid fa-money-bill-wave text-[9px]"></i>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- CALENDAR CARD -->
+    <section class="bg-white rounded-2xl p-3.5 shadow-sm border border-slate-200">
+      <!-- Month Navigation -->
+      <div class="flex items-center justify-between mb-3 px-1">
+        <button id="btnPrevMonth" class="w-9 h-9 rounded-xl bg-slate-100 hover:bg-slate-200 active:bg-slate-300 flex items-center justify-center text-slate-700 font-bold transition-colors">
+          <i class="fa-solid fa-chevron-left text-sm"></i>
+        </button>
+        <div class="text-center">
+          <h2 id="calendarTitle" class="text-lg font-black text-slate-900 tracking-tight">2026年 10月</h2>
+          <button id="btnToday" class="text-[11px] text-emerald-600 font-bold hover:underline">今日を表示</button>
+        </div>
+        <button id="btnNextMonth" class="w-9 h-9 rounded-xl bg-slate-100 hover:bg-slate-200 active:bg-slate-300 flex items-center justify-center text-slate-700 font-bold transition-colors">
+          <i class="fa-solid fa-chevron-right text-sm"></i>
+        </button>
+      </div>
+
+      <!-- Day of week header -->
+      <div class="grid grid-cols-7 gap-1 text-center text-xs font-black mb-1.5">
+        <span class="text-red-500 py-1">日</span>
+        <span class="text-slate-600 py-1">月</span>
+        <span class="text-slate-600 py-1">火</span>
+        <span class="text-slate-600 py-1">水</span>
+        <span class="text-slate-600 py-1">木</span>
+        <span class="text-slate-600 py-1">金</span>
+        <span class="text-blue-600 py-1">土</span>
+      </div>
+
+      <!-- Calendar Day Grid -->
+      <div id="calendarGrid" class="grid grid-cols-7 gap-1 min-h-[280px]"></div>
+
+      <!-- Legend -->
+      <div class="mt-3 flex items-center justify-center gap-4 text-xs font-medium text-slate-500 border-t border-slate-100 pt-2.5">
+        <div class="flex items-center gap-1.5">
+          <span class="w-2.5 h-2.5 rounded-full bg-blue-600"></span>
+          <span id="legendP1Name">自分</span>
+        </div>
+        <div class="flex items-center gap-1.5">
+          <span class="w-2.5 h-2.5 rounded-full bg-orange-600"></span>
+          <span id="legendP2Name">友達A</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- SELECTED DAY EXPENSE SECTION -->
+    <section id="dayDetailSection" class="bg-white rounded-2xl p-4 shadow-sm border border-slate-200">
+      <div class="flex items-center justify-between border-b border-slate-100 pb-2.5 mb-3">
+        <div>
+          <span class="text-xs font-bold text-emerald-600">選択中の日付</span>
+          <h3 id="selectedDateTitle" class="text-base font-extrabold text-slate-900 leading-tight">日付を選択してください</h3>
+        </div>
+        <button id="btnOpenAddForm" class="bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white text-xs font-bold px-3 py-2 rounded-xl shadow-xs flex items-center gap-1 transition-all">
+          <i class="fa-solid fa-plus"></i>
+          <span>支払いを追加</span>
+        </button>
+      </div>
+
+      <!-- Expense List for Selected Date -->
+      <div id="dayExpenseList" class="space-y-2">
+        <p class="text-center text-xs text-slate-400 py-4">この日の支払いはまだありません</p>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- ADD / EDIT EXPENSE MODAL -->
+  <div id="expenseModal" class="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-end sm:items-center justify-center hidden">
+    <div class="bg-white w-full max-w-md rounded-t-3xl sm:rounded-2xl p-5 shadow-2xl max-h-[90vh] overflow-y-auto">
+      <div class="flex items-center justify-between pb-3 border-b border-slate-100 mb-4">
+        <h3 class="text-base font-bold text-slate-900 flex items-center gap-2">
+          <span class="w-7 h-7 rounded-lg bg-emerald-100 text-emerald-700 flex items-center justify-center text-xs">
+            <i class="fa-solid fa-pen-to-square"></i>
+          </span>
+          <span id="expenseModalTitle">立替支出を記録</span>
+        </h3>
+        <button id="btnCloseExpenseModal" class="w-8 h-8 rounded-full bg-slate-100 text-slate-500 hover:text-slate-800 flex items-center justify-center">
+          <i class="fa-solid fa-xmark text-sm"></i>
+        </button>
+      </div>
+
+      <form id="expenseForm" class="space-y-3.5">
+        <input type="hidden" id="formExpenseId" value="">
+
+        <!-- Date -->
+        <div>
+          <label class="block text-xs font-bold text-slate-700 mb-1">日付</label>
+          <input type="date" id="inputExpDate" required class="w-full text-base font-semibold px-3 py-2.5 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-emerald-500">
+        </div>
+
+        <!-- Store / Item Name -->
+        <div>
+          <label class="block text-xs font-bold text-slate-700 mb-1">店名・内容</label>
+          <input type="text" id="inputExpTitle" placeholder="例: 居酒屋、タクシー代、スーパー" required class="w-full text-base px-3 py-2.5 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-emerald-500 placeholder-slate-400">
+        </div>
+
+        <!-- Amount -->
+        <div>
+          <label class="block text-xs font-bold text-slate-700 mb-1">支払金額 (円)</label>
+          <div class="relative">
+            <span class="absolute left-3.5 top-2.5 text-slate-400 font-bold text-lg">¥</span>
+            <input type="text" inputmode="numeric" id="inputExpAmount" placeholder="3,800" required class="w-full text-xl font-bold pl-8 pr-3 py-2.5 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-emerald-500 placeholder-slate-300">
+          </div>
+        </div>
+
+        <!-- Payer -->
+        <div>
+          <label class="block text-xs font-bold text-slate-700 mb-1.5">実際に支払った人（立替者）</label>
+          <div id="payerRadioGroup" class="grid grid-cols-2 gap-2"></div>
+        </div>
+
+        <!-- Payment Method -->
+        <div>
+          <label class="block text-xs font-bold text-slate-700 mb-1.5">支払い方法</label>
+          <div class="grid grid-cols-2 gap-2">
+            <label class="cursor-pointer">
+              <input type="radio" name="formMethod" value="cash" checked class="peer sr-only">
+              <div class="py-2.5 px-3 text-center rounded-xl border border-slate-300 peer-checked:border-emerald-600 peer-checked:bg-emerald-50 peer-checked:text-emerald-800 font-bold text-xs flex items-center justify-center gap-1.5 transition-all">
+                <i class="fa-solid fa-money-bill-wave text-emerald-600"></i>
+                <span>現金</span>
+              </div>
+            </label>
+            <label class="cursor-pointer">
+              <input type="radio" name="formMethod" value="credit" class="peer sr-only">
+              <div class="py-2.5 px-3 text-center rounded-xl border border-slate-300 peer-checked:border-indigo-600 peer-checked:bg-indigo-50 peer-checked:text-indigo-800 font-bold text-xs flex items-center justify-center gap-1.5 transition-all">
+                <i class="fa-regular fa-credit-card text-indigo-600"></i>
+                <span>クレジット</span>
+              </div>
+            </label>
+          </div>
+        </div>
+
+        <!-- Split Type (折半 vs 任意) -->
+        <div>
+          <label class="block text-xs font-bold text-slate-700 mb-1.5">負担方法</label>
+          <div class="grid grid-cols-2 gap-2 text-xs font-bold mb-2">
+            <button type="button" id="btnSplitEven" class="py-2.5 rounded-xl border border-emerald-500 bg-emerald-50 text-emerald-800 transition-all flex items-center justify-center gap-1">
+              <i class="fa-solid fa-scale-balanced"></i>
+              <span>折半 (きっちり半分)</span>
+            </button>
+            <button type="button" id="btnSplitCustom" class="py-2.5 rounded-xl border border-slate-200 bg-slate-50 text-slate-700 transition-all flex items-center justify-center gap-1">
+              <i class="fa-solid fa-sliders"></i>
+              <span>任意</span>
+            </button>
+          </div>
+
+          <!-- Custom Extra Input Block (Hidden when Even) -->
+          <div id="customExtraContainer" class="hidden bg-slate-50 p-3 rounded-xl border border-slate-200 space-y-2.5">
+            <div class="space-y-1">
+              <label for="inputCustomP1Share" class="block text-[11px] font-bold text-slate-600">
+                <span id="customP1LabelName" class="text-blue-700 font-extrabold">自分</span> が支払う金額
+              </label>
+              <div class="relative">
+                <span class="absolute left-3 top-2 text-slate-400 font-bold text-sm">¥</span>
+                <input type="text" inputmode="numeric" id="inputCustomP1Share" placeholder="0" class="w-full text-base font-bold pl-7 pr-3 py-1.5 rounded-lg border border-slate-300 bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500">
+              </div>
+            </div>
+            <div class="space-y-1">
+              <label for="inputCustomP2Share" class="block text-[11px] font-bold text-slate-600">
+                <span id="customP2LabelName" class="text-orange-700 font-extrabold">友達A</span> が支払う金額
+              </label>
+              <div class="relative">
+                <span class="absolute left-3 top-2 text-slate-400 font-bold text-sm">¥</span>
+                <input type="text" inputmode="numeric" id="inputCustomP2Share" placeholder="0" class="w-full text-base font-bold pl-7 pr-3 py-1.5 rounded-lg border border-slate-300 bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500">
+              </div>
+            </div>
+            <p id="customValidationHint" class="hidden text-[11px] font-bold text-red-600 pt-0.5">
+              ※支払金額の合計を超えています
+            </p>
+          </div>
+          <input type="hidden" id="inputSplitType" value="even">
+        </div>
+
+        <!-- Submit Button -->
+        <div class="pt-2">
+          <button type="submit" id="btnSubmitExpense" class="w-full py-3.5 bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white font-extrabold text-base rounded-xl shadow-md transition-all">
+            保存する
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- SETTINGS MODAL -->
+  <div id="settingsModal" class="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4 hidden">
+    <div class="bg-white w-full max-w-sm rounded-2xl p-5 shadow-2xl space-y-4">
+      <div class="flex items-center justify-between pb-2 border-b border-slate-100">
+        <h3 class="text-base font-bold text-slate-900 flex items-center gap-2">
+          <i class="fa-solid fa-sliders text-emerald-600"></i>
+          設定
+        </h3>
+        <button id="btnCloseSettingsModal" class="w-7 h-7 rounded-full bg-slate-100 text-slate-500 flex items-center justify-center">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+
+      <div class="space-y-3">
+        <div>
+          <label class="block text-xs font-bold text-slate-700 mb-1">アプリのタイトル</label>
+          <input type="text" id="settingAppTitle" maxlength="20" placeholder="ふたり精算ノート" class="w-full text-base font-semibold px-3 py-2 rounded-xl border border-slate-300 focus:ring-2 focus:ring-emerald-500 outline-none">
+        </div>
+        <div>
+          <label class="block text-xs font-bold text-blue-700 mb-1 flex items-center gap-1">
+            <span class="w-2.5 h-2.5 rounded-full bg-blue-600"></span>
+            参加者1の名前（青色）
+          </label>
+          <input type="text" id="settingP1Name" maxlength="10" placeholder="自分" class="w-full text-base font-semibold px-3 py-2 rounded-xl border border-slate-300 focus:ring-2 focus:ring-blue-500 outline-none">
+        </div>
+        <div>
+          <label class="block text-xs font-bold text-orange-700 mb-1 flex items-center gap-1">
+            <span class="w-2.5 h-2.5 rounded-full bg-orange-600"></span>
+            参加者2の名前（オレンジ色）
+          </label>
+          <input type="text" id="settingP2Name" maxlength="10" placeholder="友達A" class="w-full text-base font-semibold px-3 py-2 rounded-xl border border-slate-300 focus:ring-2 focus:ring-orange-500 outline-none">
+        </div>
+      </div>
+
+      <div class="pt-2">
+        <button id="btnSaveSettings" class="w-full py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-sm rounded-xl shadow-xs transition-colors">
+          設定を保存して同期
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- SHARE URL MODAL -->
+  <div id="shareModal" class="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4 hidden">
+    <div class="bg-white w-full max-w-sm rounded-2xl p-5 shadow-2xl space-y-4">
+      <div class="flex items-center justify-between pb-2 border-b border-slate-100">
+        <h3 class="text-base font-bold text-slate-900 flex items-center gap-2">
+          <i class="fa-solid fa-share-nodes text-emerald-600"></i>
+          <span>ルーム共有URL</span>
+        </h3>
+        <button id="btnCloseShareModal" class="w-7 h-7 rounded-full bg-slate-100 text-slate-500 hover:text-slate-800 flex items-center justify-center">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+      <p class="text-xs text-slate-600 leading-relaxed">
+        このURLを相手に送信すると、同じルームに直接参加できます。
+      </p>
+      <div>
+        <input type="text" id="shareUrlInput" readonly class="w-full text-xs font-mono font-bold px-3 py-2 rounded-xl border border-slate-300 bg-slate-50 focus:outline-none">
+      </div>
+      <div class="flex gap-2">
+        <button id="btnCopyShareUrl" class="w-full py-2.5 bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white font-bold text-xs rounded-xl shadow-xs transition-colors flex items-center justify-center gap-1.5">
+          <i class="fa-regular fa-copy"></i>
+          <span>URLをコピー</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ROOM SWITCH MODAL -->
+  <div id="roomsModal" class="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4 hidden">
+    <div class="bg-white w-full max-w-sm rounded-2xl p-5 shadow-2xl space-y-4 max-h-[85vh] flex flex-col">
+      <div class="flex items-center justify-between pb-2 border-b border-slate-100">
+        <h3 class="text-base font-bold text-slate-900 flex items-center gap-2">
+          <i class="fa-solid fa-door-open text-emerald-600"></i>
+          ルーム切り替え・作成
+        </h3>
+        <button id="btnCloseRoomsModal" class="w-7 h-7 rounded-full bg-slate-100 text-slate-500 hover:text-slate-800 flex items-center justify-center">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+
+      <!-- 新規ルーム追加 / 参加 -->
+      <div class="bg-slate-50 p-3 rounded-xl border border-slate-200 space-y-2">
+        <label class="block text-xs font-bold text-slate-700">新しいルームを作成または参加</label>
+        <div class="flex gap-2">
+          <input type="text" id="inputNewRoomKey" placeholder="合言葉（例: trip-kyoto）" class="flex-1 text-xs font-mono font-bold px-3 py-2 rounded-lg border border-slate-300 focus:ring-2 focus:ring-emerald-500 outline-none">
+          <button id="btnAddRoomSubmit" class="bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white text-xs font-bold px-3 py-2 rounded-lg whitespace-nowrap shadow-xs">
+            移動 / 作成
+          </button>
+        </div>
+      </div>
+
+      <!-- 保存されたルームリスト -->
+      <div class="flex-1 overflow-y-auto pr-1">
+        <div class="text-[11px] font-bold text-slate-500 uppercase tracking-wide px-1 mb-1.5">保存されたルーム一覧</div>
+        <div id="roomsListContainer" class="p-1 space-y-2">
+          <!-- JSで動的レンダリング -->
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- PAYMENT BREAKDOWN MODAL (TOTAL SPENT DETAIL) -->
+  <div id="breakdownModal" class="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4 hidden">
+    <div class="bg-white w-full max-w-sm rounded-2xl p-5 shadow-2xl space-y-4">
+      <div class="flex items-center justify-between pb-2 border-b border-slate-100">
+        <h3 class="text-base font-bold text-slate-900 flex items-center gap-2">
+          <i class="fa-solid fa-wallet text-emerald-600"></i>
+          <span id="breakdownMonthTitle">今月の支払い内訳詳細</span>
+        </h3>
+        <button id="btnCloseBreakdownModal" class="w-7 h-7 rounded-full bg-slate-100 text-slate-500 hover:text-slate-800 flex items-center justify-center">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+
+      <!-- Person 1 Breakdown -->
+      <div class="bg-blue-50/80 rounded-xl p-3 border border-blue-100 space-y-1.5">
+        <div class="flex items-center justify-between">
+          <span id="modalP1Name" class="text-xs font-extrabold text-blue-900 flex items-center gap-1.5">
+            <span class="w-2.5 h-2.5 rounded-full bg-blue-600"></span>
+            自分
+          </span>
+          <span id="modalP1Total" class="text-sm font-black text-blue-950">¥0</span>
+        </div>
+        <div class="grid grid-cols-2 gap-2 text-xs pt-1 border-t border-blue-200/60">
+          <div class="bg-white/80 p-2 rounded-lg">
+            <span class="text-[10px] text-slate-500 block">現金支払い</span>
+            <span id="modalP1Cash" class="font-extrabold text-slate-800">¥0</span>
+          </div>
+          <div class="bg-white/80 p-2 rounded-lg">
+            <span class="text-[10px] text-slate-500 block">クレジット</span>
+            <span id="modalP1Credit" class="font-extrabold text-indigo-700">¥0</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Person 2 Breakdown -->
+      <div class="bg-orange-50/80 rounded-xl p-3 border border-orange-100 space-y-1.5">
+        <div class="flex items-center justify-between">
+          <span id="modalP2Name" class="text-xs font-extrabold text-orange-900 flex items-center gap-1.5">
+            <span class="w-2.5 h-2.5 rounded-full bg-orange-600"></span>
+            友達A
+          </span>
+          <span id="modalP2Total" class="text-sm font-black text-orange-950">¥0</span>
+        </div>
+        <div class="grid grid-cols-2 gap-2 text-xs pt-1 border-t border-orange-200/60">
+          <div class="bg-white/80 p-2 rounded-lg">
+            <span class="text-[10px] text-slate-500 block">現金支払い</span>
+            <span id="modalP2Cash" class="font-extrabold text-slate-800">¥0</span>
+          </div>
+          <div class="bg-white/80 p-2 rounded-lg">
+            <span class="text-[10px] text-slate-500 block">クレジット</span>
+            <span id="modalP2Credit" class="font-extrabold text-indigo-700">¥0</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Month Aggregate -->
+      <div class="bg-slate-50 rounded-xl p-3 border border-slate-200 text-xs space-y-1">
+        <div id="modalCashDiffDisplay" class="p-2.5 rounded-lg bg-emerald-50 border border-emerald-200 text-center text-xs font-bold text-emerald-900 leading-tight">
+          <!-- どちらが多く現金決済しているかを表示 -->
+        </div>
+        <div class="flex justify-between pt-1 border-t border-slate-200 text-sm font-black text-slate-900 mt-2">
+          <span>今月総合計</span>
+          <span id="modalGrandTotal">¥0</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- AI ASSISTANT CHAT PAGE -->
+  <div id="aiChatPage" class="fixed inset-0 z-50 bg-slate-100 flex flex-col hidden">
+    <!-- Chat Header -->
+    <header class="bg-white/95 backdrop-blur-md border-b border-slate-200 px-3.5 py-3 shadow-xs shrink-0">
+      <div class="max-w-md mx-auto flex items-center justify-between">
+        <div class="flex items-center gap-2.5">
+          <button id="btnCloseAiChat" class="w-9 h-9 rounded-xl bg-slate-100 hover:bg-slate-200 active:bg-slate-300 text-slate-700 flex items-center justify-center transition-colors" title="精算ノートへ戻る">
+            <i class="fa-solid fa-chevron-left text-sm"></i>
+          </button>
+          <div class="flex items-center gap-2">
+            <div class="w-8 h-8 rounded-full bg-gradient-to-tr from-emerald-500 to-teal-400 text-white flex items-center justify-center text-sm shadow-xs">
+              <i class="fa-solid fa-robot"></i>
+            </div>
+            <div>
+              <h2 class="text-sm font-black text-slate-900 leading-tight">AIアシスタント 💬</h2>
+              <div class="flex items-center gap-1 text-[11px] text-slate-500">
+                <span class="inline-block w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+                <span id="aiChatRoomSubtitle">精算データ参照モード</span>
+              </div>
+            </div>
+          </div>
+        </div>
+        <button id="btnClearAiChat" class="text-[11px] bg-slate-100 hover:bg-slate-200 text-slate-600 px-2.5 py-1.5 rounded-lg font-bold border border-slate-200 transition-colors">
+          履歴クリア
+        </button>
+      </div>
+    </header>
+
+    <!-- AI Status Bar -->
+    <div class="bg-white border-b border-slate-200 px-3.5 py-1.5 shrink-0">
+      <div class="max-w-md mx-auto flex items-center gap-1.5 text-[11px] font-bold">
+        <span id="aiStatusDot" class="inline-block w-1.5 h-1.5 rounded-full bg-amber-500"></span>
+        <span id="aiStatusText" class="text-slate-600">Gemini接続を確認中…</span>
+      </div>
+    </div>
+
+    <!-- Chat Messages Area -->
+    <div id="aiChatMessages" class="flex-1 overflow-y-auto px-3.5 py-4 space-y-3 max-w-md w-full mx-auto">
+      <!-- メッセージがここに動的に追加されます -->
+    </div>
+
+    <!-- Quick Action Chips -->
+    <div class="bg-slate-100/90 border-t border-slate-200/70 px-3.5 pt-2 pb-1.5 shrink-0">
+      <div class="max-w-md mx-auto flex gap-1.5 overflow-x-auto pb-1 no-scrollbar">
+        <button type="button" data-quick-prompt="現在の精算状況を教えて" class="ai-quick-chip shrink-0 text-[11px] font-bold bg-white hover:bg-emerald-50 text-slate-700 hover:text-emerald-700 border border-slate-300 rounded-full px-3 py-1.5 shadow-2xs transition-colors">
+          💰 現在の差額は？
+        </button>
+        <button type="button" data-quick-prompt="今月の支出まとめを出して" class="ai-quick-chip shrink-0 text-[11px] font-bold bg-white hover:bg-emerald-50 text-slate-700 hover:text-emerald-700 border border-slate-300 rounded-full px-3 py-1.5 shadow-2xs transition-colors">
+          📊 今月の支出まとめ
+        </button>
+        <button type="button" data-quick-prompt="LINE共有用の精算文面を作って" class="ai-quick-chip shrink-0 text-[11px] font-bold bg-white hover:bg-emerald-50 text-slate-700 hover:text-emerald-700 border border-slate-300 rounded-full px-3 py-1.5 shadow-2xs transition-colors">
+          📋 LINE用文面を作成
+        </button>
+      </div>
+    </div>
+
+    <!-- Chat Input Bar -->
+    <div class="bg-white border-t border-slate-200 px-3.5 py-2.5 pb-5 sm:pb-3 shrink-0">
+      <form id="aiChatForm" class="max-w-md mx-auto flex items-center gap-2">
+        <input type="text" id="aiChatInput" placeholder="精算や支出について質問する..." autocomplete="off" class="flex-1 text-sm px-3.5 py-2.5 rounded-full bg-slate-100 border border-slate-300 focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500">
+        <button type="submit" id="btnSendAiChat" class="w-10 h-10 rounded-full bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white flex items-center justify-center shadow-sm transition-colors shrink-0" title="送信">
+          <i class="fa-solid fa-paper-plane text-sm"></i>
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <!-- TOAST NOTIFICATION -->
+  <div id="toast" class="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 bg-slate-900 text-white px-4 py-2.5 rounded-full text-xs font-bold shadow-lg flex items-center gap-2 opacity-0 pointer-events-none transition-all duration-300">
+    <i class="fa-solid fa-circle-check text-emerald-400"></i>
+    <span id="toastMessage">コピーしました</span>
+  </div>
+
+  <!-- FIREBASE SCRIPTS (公式CDN) -->
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-app.js";
+    import { getFirestore, doc, setDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-firestore.js";
+    import { initializeAppCheck, ReCaptchaEnterpriseProvider } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-app-check.js";
+    import { getAI, getGenerativeModel, GoogleAIBackend } from "https://www.gstatic.com/firebasejs/12.6.0/firebase-ai.js";
+
+    // =========================================================================
+    // 【Firebase本番設定】チームひろ様プロジェクト連携済み
+    // =========================================================================
+    const firebaseConfig = {
+      apiKey: "AIzaSyDSi5GgNtOqDHALE7HWgPZoW72lY3vYUSY",
+      authDomain: "app-team-hiro.firebaseapp.com",
+      projectId: "app-team-hiro",
+      storageBucket: "app-team-hiro.firebasestorage.app",
+      messagingSenderId: "9031083230",
+      appId: "1:9031083230:web:0472a5d4b0c643712bce4f",
+      measurementId: "G-EK88K3Y5X1"
+    };
+
+    // =========================================================================
+    // 【Gemini連携設定】Firebase AI Logic 経由で Gemini を呼び出します
+    // ・Gemini APIキーはこのファイルに一切含まれません。キーは Firebase 側で
+    //   保持され、専用プロキシ経由でのみ呼び出すため、公開しても流出しません
+    // ・悪用対策として Firebase App Check（reCAPTCHA Enterprise）を併用します
+    //   サイトキーは「公開キー」なので、ここに埋め込んでも問題ありません
+    // =========================================================================
+    const GEMINI_MODEL_NAME = 'gemini-3.8-flash';
+    const RECAPTCHA_ENTERPRISE_SITE_KEY = ''; // ← App Check登録後にサイトキーを貼る（空欄の間はローカル集計モード）
+
+    const AI_SYSTEM_INSTRUCTION = [
+      'あなたは「精算ノート」という2人用の立て替え・割り勘アプリのAIアシスタントです。',
+      '渡されるアプリの会計データをもとに、日本語で簡潔かつ正確に答えてください。',
+      'ルール:',
+      '・金額や件数は、渡された会計データの数字だけを使ってください。データにない金額を推測したり創作したりしないでください。',
+      '・精算の差額は「誰が誰へいくら払えばよいか」を明確に述べてください。',
+      '・LINE用文面を求められたら、そのままコピーして送れる丁寧な文面を作成してください。',
+      '・データにない一般的な家計アドバイスには一般論として答えてよいですが、アプリの数字と混同しないでください。',
+      '・スマホで読みやすいよう短めの段落や箇条書きでまとめ、金額は¥表記と3桁区切りを使ってください。'
+    ].join('\n');
+
+    let db = null;
+    let firebaseApp = null;
+    let geminiModel = null;
+    let geminiReady = false;
+    try {
+      firebaseApp = initializeApp(firebaseConfig);
+
+      // App Check（reCAPTCHA Enterprise）: サイトキー設定時のみ有効化
+      try {
+        if (RECAPTCHA_ENTERPRISE_SITE_KEY) {
+          if (location.hostname === 'localhost' || location.hostname === '127.0.0.1') {
+            self.FIREBASE_APPCHECK_DEBUG_TOKEN = true;
+          }
+          initializeAppCheck(firebaseApp, {
+            provider: new ReCaptchaEnterpriseProvider(RECAPTCHA_ENTERPRISE_SITE_KEY),
+            isTokenAutoRefreshEnabled: true
+          });
+        }
+      } catch (e) {
+        console.warn('App Checkの初期化に失敗しました', e);
+      }
+
+      db = getFirestore(firebaseApp);
+
+      // Firebase AI Logic（Gemini Developer API バックエンド）
+      try {
+        const ai = getAI(firebaseApp, { backend: new GoogleAIBackend(), useLimitedUseAppCheckTokens: true });
+        geminiModel = getGenerativeModel(ai, { model: GEMINI_MODEL_NAME, systemInstruction: AI_SYSTEM_INSTRUCTION });
+        geminiReady = true;
+      } catch (e) {
+        console.warn('Geminiの初期化に失敗しました。ローカル集計モードで起動します', e);
+      }
+    } catch (e) {
+      console.warn("Firebase初期化待機中: ローカルモードで起動します", e);
+    }
+
+    // 1. ルームIDの特定
+    function getRoomId() {
+      try {
+        const urlParams = new URLSearchParams(window.location.search);
+        const q = urlParams.get('room');
+        if (q && q.trim()) {
+          const clean = q.trim().replace(/[^a-zA-Z0-9_-]/g, '');
+          localStorage.setItem('warikan_persistent_room', clean);
+          return clean;
+        }
+      } catch (e) {}
+
+      try {
+        const saved = localStorage.getItem('warikan_persistent_room');
+        if (saved && saved.trim()) return saved.trim();
+      } catch (e) {}
+
+      return 'pair-main';
+    }
+
+    let currentRoomId = getRoomId();
+
+    // ルームリスト管理（履歴保存）
+    function getStoredRooms() {
+      try {
+        const raw = localStorage.getItem('warikan_saved_rooms_list');
+        if (raw) {
+          const list = JSON.parse(raw);
+          if (Array.isArray(list) && list.length > 0) return list;
+        }
+      } catch (e) {}
+      return [{ id: currentRoomId, title: 'ふたり精算ノート' }];
+    }
+
+    function saveStoredRooms(rooms) {
+      try {
+        localStorage.setItem('warikan_saved_rooms_list', JSON.stringify(rooms));
+      } catch (e) {}
+    }
+
+    function recordCurrentRoom(roomId, title) {
+      let rooms = getStoredRooms();
+      const existing = rooms.find(r => r.id === roomId);
+      if (existing) {
+        if (title) existing.title = title;
+      } else {
+        rooms.unshift({ id: roomId, title: title || roomId });
+      }
+      saveStoredRooms(rooms);
+    }
+
+    // 2. アプリの状態管理
+    let expenses = [];
+    let settlements = [];
+    let settings = {
+      appTitle: 'ふたり精算ノート',
+      p1Name: '自分',
+      p2Name: '友達A'
+    };
+
+    const today = new Date();
+    let currentYear = today.getFullYear();
+    let currentMonth = today.getMonth();
+    let selectedDateStr = formatDateKey(today);
+
+    // DOM要素
+    const elAppHeaderTitle = document.getElementById('appHeaderTitle');
+    const elRoomStatusText = document.getElementById('roomStatusText');
+    const elLabelP1Name = document.getElementById('labelP1Name');
+    const elLabelP2Name = document.getElementById('labelP2Name');
+    const elLegendP1Name = document.getElementById('legendP1Name');
+    const elLegendP2Name = document.getElementById('legendP2Name');
+    const elBalanceMainDisplay = document.getElementById('balanceMainDisplay');
+    const elSettlementActionText = document.getElementById('settlementActionText');
+    const elSettlementSubText = document.getElementById('settlementSubText');
+    const elStatTotalSpent = document.getElementById('statTotalSpent');
+    const elStatP1Paid = document.getElementById('statP1Paid');
+    const elStatP2Paid = document.getElementById('statP2Paid');
+    const elCalendarTitle = document.getElementById('calendarTitle');
+    const elCalendarGrid = document.getElementById('calendarGrid');
+    const elSelectedDateTitle = document.getElementById('selectedDateTitle');
+    const elDayExpenseList = document.getElementById('dayExpenseList');
+
+    // モーダル
+    const expenseModal = document.getElementById('expenseModal');
+    const settingsModal = document.getElementById('settingsModal');
+    const shareModal = document.getElementById('shareModal');
+    const roomsModal = document.getElementById('roomsModal');
+    const breakdownModal = document.getElementById('breakdownModal');
+    const roomsListContainer = document.getElementById('roomsListContainer');
+    const inputNewRoomKey = document.getElementById('inputNewRoomKey');
+    const formExpenseId = document.getElementById('formExpenseId');
+    const inputExpDate = document.getElementById('inputExpDate');
+    const inputExpTitle = document.getElementById('inputExpTitle');
+    const inputExpAmount = document.getElementById('inputExpAmount');
+    const payerRadioGroup = document.getElementById('payerRadioGroup');
+    const btnSplitEven = document.getElementById('btnSplitEven');
+    const btnSplitCustom = document.getElementById('btnSplitCustom');
+    const inputSplitType = document.getElementById('inputSplitType');
+    const customExtraContainer = document.getElementById('customExtraContainer');
+    const customP1LabelName = document.getElementById('customP1LabelName');
+    const inputCustomP1Share = document.getElementById('inputCustomP1Share');
+    const customP2LabelName = document.getElementById('customP2LabelName');
+    const inputCustomP2Share = document.getElementById('inputCustomP2Share');
+    const customValidationHint = document.getElementById('customValidationHint');
+    let lastEditedCustomField = 'p1'; // 'p1' or 'p2'
+
+    // 3. ローカルキャッシュの即時読み込み
+    function loadCache() {
+      try {
+        const raw = localStorage.getItem(`warikan_cache_${currentRoomId}`);
+        if (raw) {
+          const data = JSON.parse(raw);
+          if (Array.isArray(data.expenses)) expenses = data.expenses;
+          if (Array.isArray(data.settlements)) settlements = data.settlements;
+          if (data.settings && typeof data.settings === 'object') {
+            settings = Object.assign(settings, data.settings);
+          }
+        }
+      } catch (e) {}
+    }
+
+    function saveCache() {
+      try {
+        const data = { expenses, settlements, settings, updatedAt: Date.now() };
+        localStorage.setItem(`warikan_cache_${currentRoomId}`, JSON.stringify(data));
+      } catch (e) {}
+    }
+
+    // 4. Firestore リアルタイム同期
+    let unsubscribe = null;
+
+    function initCloudSync() {
+      if (!db) {
+        elRoomStatusText.textContent = `オフライン保存中 (${currentRoomId})`;
+        return;
+      }
+
+      if (unsubscribe) unsubscribe();
+
+      try {
+        const docRef = doc(db, 'warikan_rooms', currentRoomId);
+        unsubscribe = onSnapshot(docRef, (docSnap) => {
+          if (docSnap.exists()) {
+            const data = docSnap.data();
+            let hasChange = false;
+
+            if (data.expenses && JSON.stringify(data.expenses) !== JSON.stringify(expenses)) {
+              expenses = data.expenses;
+              hasChange = true;
+            }
+            if (data.settlements && JSON.stringify(data.settlements) !== JSON.stringify(settlements)) {
+              settlements = data.settlements;
+              hasChange = true;
+            }
+            if (data.settings && JSON.stringify(data.settings) !== JSON.stringify(settings)) {
+              settings = Object.assign(settings, data.settings);
+              hasChange = true;
+            }
+
+            if (hasChange) {
+              saveCache();
+              renderAll();
+            }
+          }
+          elRoomStatusText.textContent = `クラウド同期中 (${currentRoomId})`;
+        }, (err) => {
+          console.warn("Firestore同期エラー:", err);
+          elRoomStatusText.textContent = `ローカル同期 (${currentRoomId})`;
+        });
+      } catch (err) {
+        elRoomStatusText.textContent = `ローカル同期 (${currentRoomId})`;
+      }
+    }
+
+    async function broadcastData() {
+      saveCache();
+      if (!db) return;
+
+      try {
+        const docRef = doc(db, 'warikan_rooms', currentRoomId);
+        await setDoc(docRef, {
+          expenses,
+          settlements,
+          settings,
+          updatedAt: Date.now()
+        }, { merge: true });
+      } catch (e) {
+        console.warn("クラウド送信エラー:", e);
+      }
+    }
+
+    // 5. 画面描画
+    function renderAll() {
+      const title = settings.appTitle || 'ふたり精算ノート';
+      elAppHeaderTitle.textContent = title;
+      document.title = title;
+      document.getElementById('settingAppTitle').value = title;
+
+      // 現在のルーム情報とタイトルを履歴に記録
+      recordCurrentRoom(currentRoomId, title);
+
+      elLabelP1Name.textContent = settings.p1Name;
+      elLabelP2Name.textContent = settings.p2Name;
+      elLegendP1Name.textContent = settings.p1Name;
+      elLegendP2Name.textContent = settings.p2Name;
+      document.getElementById('settingP1Name').value = settings.p1Name;
+      document.getElementById('settingP2Name').value = settings.p2Name;
+
+      renderCalendar();
+      renderDayExpenses(selectedDateStr);
+      calculateSettlements();
+    }
+
+    function renderCalendar() {
+      elCalendarTitle.textContent = `${currentYear}年 ${currentMonth + 1}月`;
+      const firstDayOfWeek = new Date(currentYear, currentMonth, 1).getDay();
+      const daysInMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
+
+      const dateMap = {};
+      expenses.forEach(item => {
+        if (!dateMap[item.date]) dateMap[item.date] = { p1: 0, p2: 0, count: 0 };
+        const amt = Number(item.amount) || 0;
+        if (item.payer === 'p1') dateMap[item.date].p1 += amt;
+        if (item.payer === 'p2') dateMap[item.date].p2 += amt;
+        dateMap[item.date].count += 1;
+      });
+
+      let html = '';
+      for (let i = 0; i < firstDayOfWeek; i++) {
+        html += `<div class="h-16 rounded-xl bg-slate-50/50 border border-transparent"></div>`;
+      }
+
+      for (let day = 1; day <= daysInMonth; day++) {
+        const dateStr = `${currentYear}-${String(currentMonth + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+        const isSelected = (dateStr === selectedDateStr);
+        const isToday = (dateStr === formatDateKey(today));
+        const dayInfo = dateMap[dateStr] || { p1: 0, p2: 0, count: 0 };
+
+        const dayOfWeek = new Date(currentYear, currentMonth, day).getDay();
+        let dayNumColor = 'text-slate-800';
+        if (dayOfWeek === 0) dayNumColor = 'text-red-500 font-bold';
+        if (dayOfWeek === 6) dayNumColor = 'text-blue-600 font-bold';
+
+        html += `
+          <div data-date="${dateStr}" class="cal-day-cell h-16 p-1 rounded-xl flex flex-col justify-between cursor-pointer border transition-all ${
+            isSelected
+              ? 'ring-2 ring-emerald-500 bg-emerald-50/70 border-emerald-400 font-bold shadow-xs'
+              : 'bg-white hover:bg-slate-50 border-slate-200'
+          }">
+            <div class="flex items-center justify-between w-full">
+              <span class="text-xs font-black inline-flex items-center justify-center ${
+                isToday
+                  ? 'w-5 h-5 rounded-full bg-emerald-600 text-white shadow-xs'
+                  : dayNumColor
+              }">
+                ${day}
+              </span>
+              ${dayInfo.count > 0 ? `<span class="w-1.5 h-1.5 rounded-full bg-emerald-500 mr-0.5"></span>` : ''}
+            </div>
+            <div class="space-y-0.5 overflow-hidden w-full">
+              ${dayInfo.p1 > 0 ? `
+                <div class="text-[9px] font-bold text-blue-700 bg-blue-100 rounded px-0.5 truncate leading-tight text-center">
+                  ¥${dayInfo.p1 > 9999 ? Math.floor(dayInfo.p1 / 1000) + 'k' : dayInfo.p1.toLocaleString()}
+                </div>
+              ` : ''}
+              ${dayInfo.p2 > 0 ? `
+                <div class="text-[9px] font-bold text-orange-700 bg-orange-100 rounded px-0.5 truncate leading-tight text-center">
+                  ¥${dayInfo.p2 > 9999 ? Math.floor(dayInfo.p2 / 1000) + 'k' : dayInfo.p2.toLocaleString()}
+                </div>
+              ` : ''}
+            </div>
+          </div>
+        `;
+      }
+
+      elCalendarGrid.innerHTML = html;
+
+      elCalendarGrid.querySelectorAll('.cal-day-cell').forEach(cell => {
+        cell.addEventListener('click', () => {
+          selectedDateStr = cell.getAttribute('data-date');
+          renderCalendar();
+          renderDayExpenses(selectedDateStr);
+        });
+      });
+    }
+
+    function renderDayExpenses(dateStr) {
+      if (!dateStr) return;
+      const parts = dateStr.split('-');
+      elSelectedDateTitle.textContent = `${Number(parts[1])}月${Number(parts[2])}日の支払い明細`;
+
+      const dayItems = expenses.filter(x => x.date === dateStr);
+
+      if (dayItems.length === 0) {
+        elDayExpenseList.innerHTML = `
+          <div class="text-center py-6 px-4 bg-slate-50 rounded-xl border border-dashed border-slate-200">
+            <i class="fa-regular fa-calendar-xmark text-slate-300 text-2xl mb-1.5"></i>
+            <p class="text-xs text-slate-500 font-medium">この日の立替明細はありません</p>
+            <button id="btnEmptyAdd" class="mt-2 text-xs font-bold text-emerald-600 hover:underline">
+              ＋ 支出を追加する
+            </button>
+          </div>
+        `;
+        const btnEmpty = document.getElementById('btnEmptyAdd');
+        if (btnEmpty) btnEmpty.addEventListener('click', () => openExpenseModal());
+        return;
+      }
+
+      let html = '';
+      dayItems.forEach(item => {
+        const isP1 = (item.payer === 'p1');
+        const payerName = isP1 ? settings.p1Name : settings.p2Name;
+        const payerBadgeColor = isP1 ? 'bg-blue-100 text-blue-800 border-blue-200' : 'bg-orange-100 text-orange-800 border-orange-200';
+        const ratioLabel = getRatioLabel(item);
+        const isCredit = (item.method === 'credit');
+        const methodIcon = isCredit
+          ? '<i class="fa-regular fa-credit-card mr-1 text-indigo-600"></i>'
+          : '<i class="fa-solid fa-money-bill-wave mr-1 text-emerald-600"></i>';
+
+        html += `
+          <div data-edit-id="${item.id}" class="expense-card-item p-3 rounded-xl bg-slate-50 hover:bg-slate-100/80 active:bg-slate-200/60 border border-slate-200 flex items-center justify-between cursor-pointer transition-colors">
+            <div class="space-y-0.5">
+              <div class="flex items-center gap-2">
+                <span class="text-xs px-2 py-0.5 rounded-full font-bold border ${payerBadgeColor} flex items-center">
+                  ${methodIcon}${escapeHtml(payerName)}が立替
+                </span>
+                <span class="text-xs font-semibold text-slate-500">${ratioLabel}</span>
+              </div>
+              <h4 class="text-sm font-bold text-slate-900 mt-0.5">${escapeHtml(item.title)}</h4>
+            </div>
+            <div class="flex items-center gap-2.5">
+              <span class="text-base font-extrabold text-slate-900">¥${Number(item.amount).toLocaleString()}</span>
+              <button data-delete-id="${item.id}" class="btn-delete-expense w-7 h-7 rounded-lg text-slate-400 hover:text-red-500 hover:bg-red-50 flex items-center justify-center transition-colors">
+                <i class="fa-regular fa-trash-can text-sm"></i>
+              </button>
+            </div>
+          </div>
+        `;
+      });
+
+      elDayExpenseList.innerHTML = html;
+
+      elDayExpenseList.querySelectorAll('.expense-card-item').forEach(card => {
+        card.addEventListener('click', (e) => {
+          if (e.target.closest('.btn-delete-expense')) return;
+          const editId = card.getAttribute('data-edit-id');
+          const target = expenses.find(x => x.id === editId);
+          if (target) openExpenseModal(target);
+        });
+      });
+
+      elDayExpenseList.querySelectorAll('.btn-delete-expense').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          const id = btn.getAttribute('data-delete-id');
+          deleteExpense(id);
+        });
+      });
+    }
+
+    // 計算ロジック（任意で多く払う金額を正確に反映）
+    function calculateSettlements() {
+      const currentMonthPrefix = `${currentYear}-${String(currentMonth + 1).padStart(2, '0')}`;
+      let monthTotal = 0;
+      let monthP1Share = 0;
+      let monthP2Share = 0;
+
+      let netP1Balance = 0;
+
+      expenses.forEach(item => {
+        const amt = Number(item.amount) || 0;
+        const payer = item.payer;
+
+        let p1Share = 0;
+        let p2Share = 0;
+
+        if (item.splitType === 'custom') {
+          if (typeof item.payerShare === 'number') {
+            const pShare = Math.min(amt, Math.max(0, item.payerShare));
+            const oShare = amt - pShare;
+            if (payer === 'p1') {
+              p1Share = pShare;
+              p2Share = oShare;
+            } else {
+              p2Share = pShare;
+              p1Share = oShare;
+            }
+          } else {
+            const extraPayer = item.extraPayer || 'p1';
+            const extraAmt = Math.min(amt, Math.max(0, Number(item.extraAmount) || 0));
+            const baseRemainder = amt - extraAmt;
+            const halfBase = baseRemainder / 2;
+
+            if (extraPayer === 'p1') {
+              p1Share = halfBase + extraAmt;
+              p2Share = halfBase;
+            } else {
+              p2Share = halfBase + extraAmt;
+              p1Share = halfBase;
+            }
+          }
+        } else if (item.ratio && item.ratio.includes(':')) {
+          const parts = item.ratio.split(':').map(Number);
+          const p1Pct = (!isNaN(parts[0])) ? parts[0] / 100 : 0.5;
+          p1Share = amt * p1Pct;
+          p2Share = amt * (1 - p1Pct);
+        } else {
+          p1Share = amt / 2;
+          p2Share = amt / 2;
+        }
+
+        if (item.date && item.date.startsWith(currentMonthPrefix)) {
+          monthTotal += amt;
+          monthP1Share += p1Share;
+          monthP2Share += p2Share;
+        }
+
+        if (payer === 'p1') {
+          netP1Balance += (amt - p1Share);
+        } else {
+          netP1Balance -= (amt - p2Share);
+        }
+      });
+
+      let p1CashAdjusted = 0;
+      let p2CashAdjusted = 0;
+      expenses.forEach(item => {
+        const amt = Number(item.amount) || 0;
+        if (item.method !== 'credit') {
+          let extra = 0;
+          if (item.splitType === 'custom') {
+            if (typeof item.payerShare === 'number') {
+              const pShare = Math.min(amt, Math.max(0, item.payerShare));
+              const oShare = amt - pShare;
+              if (pShare > oShare) {
+                extra = pShare - oShare;
+              }
+            } else if (item.extraPayer === item.payer) {
+              extra = Math.min(amt, Math.max(0, Number(item.extraAmount) || 0));
+            }
+          }
+          if (item.payer === 'p1') p1CashAdjusted += (amt - extra);
+          if (item.payer === 'p2') p2CashAdjusted += (amt - extra);
+        }
+      });
+
+      const cashDiff = p1CashAdjusted - p2CashAdjusted;
+      const elCashSub = document.getElementById('statCashSummarySub');
+
+      if (cashDiff > 0) {
+        elStatTotalSpent.textContent = `${settings.p1Name} ¥${cashDiff.toLocaleString()}`;
+        elStatTotalSpent.className = "text-xs font-black text-blue-700 mt-0.5 leading-tight truncate";
+        if (elCashSub) {
+          elCashSub.innerHTML = `<span>多く現金決済</span><i class="fa-solid fa-money-bill-wave text-[9px] text-blue-600"></i>`;
+          elCashSub.className = "text-[9px] text-blue-700 font-bold flex items-center justify-center gap-0.5 mt-0.5 truncate";
+        }
+      } else if (cashDiff < 0) {
+        const absDiff = Math.abs(cashDiff);
+        elStatTotalSpent.textContent = `${settings.p2Name} ¥${absDiff.toLocaleString()}`;
+        elStatTotalSpent.className = "text-xs font-black text-orange-700 mt-0.5 leading-tight truncate";
+        if (elCashSub) {
+          elCashSub.innerHTML = `<span>多く現金決済</span><i class="fa-solid fa-money-bill-wave text-[9px] text-orange-600"></i>`;
+          elCashSub.className = "text-[9px] text-orange-700 font-bold flex items-center justify-center gap-0.5 mt-0.5 truncate";
+        }
+      } else {
+        elStatTotalSpent.textContent = `差額なし (¥0)`;
+        elStatTotalSpent.className = "text-xs font-black text-slate-700 mt-0.5 leading-tight truncate";
+        if (elCashSub) {
+          elCashSub.innerHTML = `<span>現金同額</span><i class="fa-solid fa-scale-balanced text-[9px] text-slate-500"></i>`;
+          elCashSub.className = "text-[9px] text-slate-500 font-bold flex items-center justify-center gap-0.5 mt-0.5 truncate";
+        }
+      }
+
+      elStatP1Paid.textContent = `¥${Math.round(monthP1Share).toLocaleString()}`;
+      elStatP2Paid.textContent = `¥${Math.round(monthP2Share).toLocaleString()}`;
+
+      const roundedNet = Math.round(netP1Balance);
+
+      if (roundedNet > 0) {
+        elSettlementActionText.innerHTML = `
+          <span class="text-orange-600">${escapeHtml(settings.p2Name)}</span>
+          <span class="text-xs font-normal text-slate-500 mx-1">が</span>
+          <span class="text-blue-600">${escapeHtml(settings.p1Name)}</span>
+          <span class="text-xs font-normal text-slate-500 mx-1">に</span>
+          <span class="text-2xl text-emerald-600 font-black">¥${roundedNet.toLocaleString()}</span>
+          <span class="text-xs font-semibold text-slate-700 ml-1">支払う</span>
+        `;
+        elSettlementSubText.textContent = `支払い合計と指定負担額を正確に計算しています`;
+        elBalanceMainDisplay.className = "bg-orange-50/60 rounded-xl p-3.5 border border-orange-200 text-center mb-3";
+      } else if (roundedNet < 0) {
+        const diff = Math.abs(roundedNet);
+        elSettlementActionText.innerHTML = `
+          <span class="text-blue-600">${escapeHtml(settings.p1Name)}</span>
+          <span class="text-xs font-normal text-slate-500 mx-1">が</span>
+          <span class="text-orange-600">${escapeHtml(settings.p2Name)}</span>
+          <span class="text-xs font-normal text-slate-500 mx-1">に</span>
+          <span class="text-2xl text-emerald-600 font-black">¥${diff.toLocaleString()}</span>
+          <span class="text-xs font-semibold text-slate-700 ml-1">支払う</span>
+        `;
+        elSettlementSubText.textContent = `支払い合計と指定負担額を正確に計算しています`;
+        elBalanceMainDisplay.className = "bg-blue-50/60 rounded-xl p-3.5 border border-blue-200 text-center mb-3";
+      } else {
+        elSettlementActionText.innerHTML = `
+          <span class="text-emerald-700 font-bold">現在、差額はありません（¥0）</span>
+        `;
+        elSettlementSubText.textContent = `支払いが均等または指定負担通りです`;
+        elBalanceMainDisplay.className = "bg-emerald-50/60 rounded-xl p-3.5 border border-emerald-200 text-center mb-3";
+      }
+    }
+
+    // 6. モーダル操作
+    function openExpenseModal(editItem = null) {
+      updatePayerRadioUI('p1');
+      inputExpDate.value = selectedDateStr;
+      inputExpTitle.value = '';
+      inputExpAmount.value = '';
+      setMethod('cash');
+      setSplitMode('even');
+      inputCustomP1Share.value = '';
+      inputCustomP2Share.value = '';
+      lastEditedCustomField = 'p1';
+
+      if (editItem) {
+        formExpenseId.value = editItem.id;
+        inputExpDate.value = editItem.date;
+        inputExpTitle.value = editItem.title;
+        inputExpAmount.value = Number(editItem.amount).toLocaleString();
+        updatePayerRadioUI(editItem.payer);
+        setMethod(editItem.method || 'cash');
+
+        if (editItem.splitType === 'custom') {
+          setSplitMode('custom');
+          const amt = Number(editItem.amount) || 0;
+          let p1Share = 0;
+          let p2Share = 0;
+
+          if (typeof editItem.payerShare === 'number') {
+            const pShare = Math.min(amt, Math.max(0, editItem.payerShare));
+            const oShare = amt - pShare;
+            if (editItem.payer === 'p1') {
+              p1Share = pShare;
+              p2Share = oShare;
+            } else {
+              p2Share = pShare;
+              p1Share = oShare;
+            }
+          } else {
+            const extraAmt = Number(editItem.extraAmount) || 0;
+            const baseHalf = Math.max(0, amt - extraAmt) / 2;
+            if (editItem.extraPayer === 'p1') {
+              p1Share = Math.round(baseHalf + extraAmt);
+              p2Share = amt - p1Share;
+            } else {
+              p2Share = Math.round(baseHalf + extraAmt);
+              p1Share = amt - p2Share;
+            }
+          }
+          inputCustomP1Share.value = p1Share.toLocaleString();
+          inputCustomP2Share.value = p2Share.toLocaleString();
+          syncCustomLabelsAndValidation();
+        } else {
+          setSplitMode('even');
+        }
+      } else {
+        formExpenseId.value = '';
+      }
+      expenseModal.classList.remove('hidden');
+    }
+
+    function closeExpenseModal() {
+      expenseModal.classList.add('hidden');
+    }
+
+    function setMethod(methodVal) {
+      const radio = document.querySelector(`input[name="formMethod"][value="${methodVal}"]`);
+      if (radio) radio.checked = true;
+    }
+
+    function setSplitMode(mode) {
+      inputSplitType.value = mode;
+      if (mode === 'custom') {
+        btnSplitCustom.className = "py-2.5 rounded-xl border border-emerald-500 bg-emerald-50 text-emerald-800 transition-all flex items-center justify-center gap-1";
+        btnSplitEven.className = "py-2.5 rounded-xl border border-slate-200 bg-slate-50 text-slate-700 transition-all flex items-center justify-center gap-1";
+        customExtraContainer.classList.remove('hidden');
+        syncCustomLabelsAndValidation();
+      } else {
+        btnSplitEven.className = "py-2.5 rounded-xl border border-emerald-500 bg-emerald-50 text-emerald-800 transition-all flex items-center justify-center gap-1";
+        btnSplitCustom.className = "py-2.5 rounded-xl border border-slate-200 bg-slate-50 text-slate-700 transition-all flex items-center justify-center gap-1";
+        customExtraContainer.classList.add('hidden');
+      }
+    }
+
+    function parseFormattedNumber(val) {
+      if (val === null || val === undefined) return NaN;
+      const cleaned = String(val).replace(/,/g, '').replace(/[０-９]/g, s => String.fromCharCode(s.charCodeAt(0) - 0xFEE0)).trim();
+      if (cleaned === '') return NaN;
+      return parseInt(cleaned, 10);
+    }
+
+    function formatNumberInput(inputEl) {
+      const rawDigits = inputEl.value.replace(/[０-９]/g, s => String.fromCharCode(s.charCodeAt(0) - 0xFEE0)).replace(/[^0-9]/g, '');
+      if (rawDigits === '') {
+        inputEl.value = '';
+        return;
+      }
+      inputEl.value = Number(rawDigits).toLocaleString();
+    }
+
+    function syncCustomLabelsAndValidation() {
+      if (customP1LabelName) customP1LabelName.textContent = settings.p1Name;
+      if (customP2LabelName) customP2LabelName.textContent = settings.p2Name;
+
+      const totalAmt = parseFormattedNumber(inputExpAmount.value) || 0;
+      const p1Val = parseFormattedNumber(inputCustomP1Share.value);
+      const p2Val = parseFormattedNumber(inputCustomP2Share.value);
+
+      const isOver = (!isNaN(p1Val) && p1Val > totalAmt) || (!isNaN(p2Val) && p2Val > totalAmt);
+      if (customValidationHint) {
+        if (isOver && totalAmt > 0) {
+          customValidationHint.classList.remove('hidden');
+        } else {
+          customValidationHint.classList.add('hidden');
+        }
+      }
+    }
+
+    function recalculateCustomFrom(source) {
+      syncCustomLabelsAndValidation();
+      const totalAmt = parseFormattedNumber(inputExpAmount.value);
+
+      if (source === 'p1') {
+        const p1Val = parseFormattedNumber(inputCustomP1Share.value);
+        if (isNaN(p1Val) || isNaN(totalAmt)) {
+          inputCustomP2Share.value = '';
+        } else if (p1Val > totalAmt) {
+          inputCustomP2Share.value = '0';
+        } else {
+          inputCustomP2Share.value = (totalAmt - p1Val).toLocaleString();
+        }
+      } else if (source === 'p2') {
+        const p2Val = parseFormattedNumber(inputCustomP2Share.value);
+        if (isNaN(p2Val) || isNaN(totalAmt)) {
+          inputCustomP1Share.value = '';
+        } else if (p2Val > totalAmt) {
+          inputCustomP1Share.value = '0';
+        } else {
+          inputCustomP1Share.value = (totalAmt - p2Val).toLocaleString();
+        }
+      }
+      syncCustomLabelsAndValidation();
+    }
+
+    inputExpAmount.addEventListener('input', () => {
+      formatNumberInput(inputExpAmount);
+      recalculateCustomFrom(lastEditedCustomField);
+    });
+    inputCustomP1Share.addEventListener('input', () => {
+      formatNumberInput(inputCustomP1Share);
+      lastEditedCustomField = 'p1';
+      recalculateCustomFrom('p1');
+    });
+    inputCustomP2Share.addEventListener('input', () => {
+      formatNumberInput(inputCustomP2Share);
+      lastEditedCustomField = 'p2';
+      recalculateCustomFrom('p2');
+    });
+
+    btnSplitEven.addEventListener('click', () => setSplitMode('even'));
+    btnSplitCustom.addEventListener('click', () => setSplitMode('custom'));
+
+    function updatePayerRadioUI(selectedPayer = 'p1') {
+      payerRadioGroup.innerHTML = `
+        <label class="cursor-pointer">
+          <input type="radio" name="formPayer" value="p1" ${selectedPayer === 'p1' ? 'checked' : ''} class="peer sr-only">
+          <div class="p-3 text-center rounded-xl border border-slate-300 peer-checked:border-blue-600 peer-checked:bg-blue-50 peer-checked:text-blue-800 transition-all font-bold text-xs flex items-center justify-center gap-1.5">
+            <span class="w-2.5 h-2.5 rounded-full bg-blue-600"></span>
+            <span class="truncate">${escapeHtml(settings.p1Name)}</span>
+          </div>
+        </label>
+        <label class="cursor-pointer">
+          <input type="radio" name="formPayer" value="p2" ${selectedPayer === 'p2' ? 'checked' : ''} class="peer sr-only">
+          <div class="p-3 text-center rounded-xl border border-slate-300 peer-checked:border-orange-600 peer-checked:bg-orange-50 peer-checked:text-orange-800 transition-all font-bold text-xs flex items-center justify-center gap-1.5">
+            <span class="w-2.5 h-2.5 rounded-full bg-orange-600"></span>
+            <span class="truncate">${escapeHtml(settings.p2Name)}</span>
+          </div>
+        </label>
+      `;
+      payerRadioGroup.querySelectorAll('input[name="formPayer"]').forEach(radio => {
+        radio.addEventListener('change', syncCustomLabelsAndValidation);
+      });
+    }
+
+    function getRatioLabel(item) {
+      if (!item) return '折半';
+      if (item.splitType === 'custom') {
+        const amt = Number(item.amount) || 0;
+        if (typeof item.payerShare === 'number') {
+          const pName = (item.payer === 'p2') ? settings.p2Name : settings.p1Name;
+          const oName = (item.payer === 'p2') ? settings.p1Name : settings.p2Name;
+          const pShare = Math.min(amt, Math.max(0, item.payerShare));
+          const oShare = amt - pShare;
+          return `${pName} ¥${pShare.toLocaleString()} / ${oName} ¥${oShare.toLocaleString()}`;
+        }
+        const whoName = (item.extraPayer === 'p2') ? settings.p2Name : settings.p1Name;
+        const extraVal = Number(item.extraAmount) || 0;
+        return `【任意】${whoName}が ¥${extraVal.toLocaleString()} 多く支払い`;
+      }
+      if (item.ratio && item.ratio !== '50:50') {
+        return item.ratio.replace(':', ' : ');
+      }
+      return '折半';
+    }
+
+    function deleteExpense(id) {
+      expenses = expenses.filter(e => e.id !== id);
+      renderAll();
+      broadcastData();
+      showToast('明細を削除しました');
+    }
+
+    // 支出登録
+    expenseForm.addEventListener('submit', (e) => {
+      e.preventDefault();
+      const title = inputExpTitle.value.trim();
+      const amount = parseFormattedNumber(inputExpAmount.value);
+      const date = inputExpDate.value;
+      const payer = document.querySelector('input[name="formPayer"]:checked')?.value || 'p1';
+      const method = document.querySelector('input[name="formMethod"]:checked')?.value || 'cash';
+      const splitType = inputSplitType.value || 'even';
+
+      if (!title || isNaN(amount) || amount <= 0 || !date) {
+        showToast('入力内容を確認してください');
+        return;
+      }
+
+      let payerShare = null;
+      if (splitType === 'custom') {
+        const p1Share = parseFormattedNumber(inputCustomP1Share.value);
+        const p2Share = parseFormattedNumber(inputCustomP2Share.value);
+
+        if (isNaN(p1Share) || isNaN(p2Share) || p1Share < 0 || p2Share < 0 || (p1Share + p2Share) !== amount) {
+          showToast('2人の支払う金額の合計が支払金額と一致するように入力してください');
+          return;
+        }
+        payerShare = (payer === 'p1') ? p1Share : p2Share;
+      }
+
+      const newExpense = {
+        id: formExpenseId.value || 'exp_' + Date.now() + '_' + Math.random().toString(36).substring(2, 6),
+        title,
+        amount,
+        date,
+        payer,
+        method,
+        splitType,
+        payerShare,
+        createdAt: Date.now()
+      };
+
+      if (formExpenseId.value) {
+        expenses = expenses.map(x => x.id === formExpenseId.value ? newExpense : x);
+      } else {
+        expenses.unshift(newExpense);
+      }
+
+      selectedDateStr = date;
+      closeExpenseModal();
+      renderAll();
+      broadcastData();
+      showToast('支払いを記録しました');
+    });
+
+    // 今月の総利用額（内訳モーダル）の表示
+    document.getElementById('cardTotalSpent').addEventListener('click', () => {
+      openBreakdownModal();
+    });
+
+    document.getElementById('btnCloseBreakdownModal').addEventListener('click', () => {
+      breakdownModal.classList.add('hidden');
+    });
+
+    function openBreakdownModal() {
+      let p1Cash = 0, p1Credit = 0;
+      let p2Cash = 0, p2Credit = 0;
+
+      let p1CashAdjusted = 0;
+      let p2CashAdjusted = 0;
+
+      expenses.forEach(item => {
+        const amt = Number(item.amount) || 0;
+        const isCredit = (item.method === 'credit');
+        if (item.payer === 'p1') {
+          if (isCredit) {
+            p1Credit += amt;
+          } else {
+            p1Cash += amt;
+            let extra = 0;
+            if (item.splitType === 'custom') {
+              if (typeof item.payerShare === 'number') {
+                const pShare = Math.min(amt, Math.max(0, item.payerShare));
+                const oShare = amt - pShare;
+                if (pShare > oShare) extra = pShare - oShare;
+              } else if (item.extraPayer === 'p1') {
+                extra = Math.min(amt, Math.max(0, Number(item.extraAmount) || 0));
+              }
+            }
+            p1CashAdjusted += (amt - extra);
+          }
+        } else {
+          if (isCredit) {
+            p2Credit += amt;
+          } else {
+            p2Cash += amt;
+            let extra = 0;
+            if (item.splitType === 'custom') {
+              if (typeof item.payerShare === 'number') {
+                const pShare = Math.min(amt, Math.max(0, item.payerShare));
+                const oShare = amt - pShare;
+                if (pShare > oShare) extra = pShare - oShare;
+              } else if (item.extraPayer === 'p2') {
+                extra = Math.min(amt, Math.max(0, Number(item.extraAmount) || 0));
+              }
+            }
+            p2CashAdjusted += (amt - extra);
+          }
+        }
+      });
+
+      const p1Total = p1Cash + p1Credit;
+      const p2Total = p2Cash + p2Credit;
+      const grandTotal = p1Total + p2Total;
+
+      document.getElementById('breakdownMonthTitle').textContent = `支払い内訳（累計）`;
+      document.getElementById('modalP1Name').innerHTML = `<span class="w-2.5 h-2.5 rounded-full bg-blue-600"></span>${escapeHtml(settings.p1Name)}`;
+      document.getElementById('modalP2Name').innerHTML = `<span class="w-2.5 h-2.5 rounded-full bg-orange-600"></span>${escapeHtml(settings.p2Name)}`;
+
+      document.getElementById('modalP1Cash').textContent = `¥${p1Cash.toLocaleString()}`;
+      document.getElementById('modalP1Credit').textContent = `¥${p1Credit.toLocaleString()}`;
+      document.getElementById('modalP1Total').textContent = `¥${p1Total.toLocaleString()}`;
+
+      document.getElementById('modalP2Cash').textContent = `¥${p2Cash.toLocaleString()}`;
+      document.getElementById('modalP2Credit').textContent = `¥${p2Credit.toLocaleString()}`;
+      document.getElementById('modalP2Total').textContent = `¥${p2Total.toLocaleString()}`;
+
+      const cashDiffDisplay = document.getElementById('modalCashDiffDisplay');
+      const cashDiff = p1CashAdjusted - p2CashAdjusted;
+
+      if (cashDiff > 0) {
+        cashDiffDisplay.className = "p-2.5 rounded-lg bg-blue-50 border border-blue-200 text-center text-xs font-bold text-blue-900 leading-tight";
+        cashDiffDisplay.innerHTML = `<i class="fa-solid fa-coins text-blue-600 mr-1"></i>【${escapeHtml(settings.p1Name)}】が <span class="text-sm font-black text-blue-700">¥${cashDiff.toLocaleString()}</span> 多く現金決済しているよ`;
+      } else if (cashDiff < 0) {
+        const absDiff = Math.abs(cashDiff);
+        cashDiffDisplay.className = "p-2.5 rounded-lg bg-orange-50 border border-orange-200 text-center text-xs font-bold text-orange-900 leading-tight";
+        cashDiffDisplay.innerHTML = `<i class="fa-solid fa-coins text-orange-600 mr-1"></i>【${escapeHtml(settings.p2Name)}】が <span class="text-sm font-black text-orange-700">¥${absDiff.toLocaleString()}</span> 多く現金決済しているよ`;
+      } else {
+        cashDiffDisplay.className = "p-2.5 rounded-lg bg-slate-100 border border-slate-200 text-center text-xs font-bold text-slate-700 leading-tight";
+        cashDiffDisplay.innerHTML = `<i class="fa-solid fa-scale-balanced text-slate-500 mr-1"></i>ふたりの現金決済額（任意除外後）は同額です`;
+      }
+
+      document.getElementById('modalGrandTotal').textContent = `¥${grandTotal.toLocaleString()}`;
+
+      breakdownModal.classList.remove('hidden');
+    }
+
+    // 設定モーダル
+    document.getElementById('btnOpenSettings').addEventListener('click', () => {
+      settingsModal.classList.remove('hidden');
+    });
+    document.getElementById('btnCloseSettingsModal').addEventListener('click', () => {
+      settingsModal.classList.add('hidden');
+    });
+
+    // 設定保存
+    document.getElementById('btnSaveSettings').addEventListener('click', () => {
+      const newTitle = document.getElementById('settingAppTitle').value.trim() || 'ふたり精算ノート';
+      const newP1 = document.getElementById('settingP1Name').value.trim() || '自分';
+      const newP2 = document.getElementById('settingP2Name').value.trim() || '友達A';
+
+      settings.appTitle = newTitle;
+      settings.p1Name = newP1;
+      settings.p2Name = newP2;
+
+      recordCurrentRoom(currentRoomId, newTitle);
+
+      settingsModal.classList.add('hidden');
+      renderAll();
+      broadcastData();
+      showToast('設定を保存しました！');
+    });
+
+    // ルーム切り替え関数
+    function switchRoom(newRoomId) {
+      if (!newRoomId) return;
+      currentRoomId = newRoomId;
+      try {
+        localStorage.setItem('warikan_persistent_room', currentRoomId);
+        const url = new URL(window.location.href);
+        url.searchParams.set('room', currentRoomId);
+        window.history.replaceState({}, '', url.toString());
+      } catch (e) {}
+
+      expenses = [];
+      settlements = [];
+      settings = {
+        appTitle: newRoomId,
+        p1Name: '自分',
+        p2Name: '友達A'
+      };
+
+      loadCache();
+      recordCurrentRoom(currentRoomId, settings.appTitle || currentRoomId);
+      renderAll();
+      initCloudSync();
+      showToast(`ルーム「${currentRoomId}」に切り替えました`);
+    }
+
+    // ルーム一覧のレンダリング
+    function renderRoomsList() {
+      const rooms = getStoredRooms();
+      if (!rooms.some(r => r.id === currentRoomId)) {
+        rooms.unshift({ id: currentRoomId, title: settings.appTitle || currentRoomId });
+        saveStoredRooms(rooms);
+      }
+
+      if (rooms.length === 0) {
+        roomsListContainer.innerHTML = `<p class="text-xs text-slate-400 py-3 text-center">保存されたルームはありません</p>`;
+        return;
+      }
+
+      let html = '';
+      rooms.forEach((r, index) => {
+        const isCurrent = (r.id === currentRoomId);
+        const displayTitle = isCurrent ? (settings.appTitle || r.title || r.id) : (r.title || r.id);
+        const isFirst = (index === 0);
+        const isLast = (index === rooms.length - 1);
+
+        html += `
+          <div class="flex items-center justify-between p-2.5 rounded-xl border transition-all ${
+            isCurrent
+              ? 'bg-emerald-50/70 border-emerald-400 shadow-xs'
+              : 'bg-white hover:bg-slate-50 border-slate-200 shadow-2xs'
+          }">
+            <div class="flex items-center gap-1 mr-2 text-slate-400">
+              <button data-move-up="${index}" class="btn-room-up w-6 h-6 rounded flex items-center justify-center hover:bg-slate-200 hover:text-slate-700 transition-colors ${isFirst ? 'opacity-20 pointer-events-none' : ''}" title="上へ移動">
+                <i class="fa-solid fa-chevron-up text-[10px]"></i>
+              </button>
+              <button data-move-down="${index}" class="btn-room-down w-6 h-6 rounded flex items-center justify-center hover:bg-slate-200 hover:text-slate-700 transition-colors ${isLast ? 'opacity-20 pointer-events-none' : ''}" title="下へ移動">
+                <i class="fa-solid fa-chevron-down text-[10px]"></i>
+              </button>
+            </div>
+            <div class="flex-1 cursor-pointer select-room-item truncate mr-2" data-room-id="${escapeHtml(r.id)}">
+              <div class="flex items-center gap-1.5">
+                <span class="text-xs font-black text-slate-900 truncate">${escapeHtml(displayTitle)}</span>
+                ${isCurrent ? '<span class="text-[10px] font-bold bg-emerald-600 text-white px-1.5 py-0.2 rounded-full">使用中</span>' : ''}
+              </div>
+              <div class="text-[10px] font-mono text-slate-500 mt-0.5 truncate flex items-center gap-1">
+                <i class="fa-solid fa-key text-[9px] text-slate-400"></i>
+                <span>${escapeHtml(r.id)}</span>
+              </div>
+            </div>
+            <button data-delete-room-id="${escapeHtml(r.id)}" class="btn-delete-room w-7 h-7 rounded-lg text-slate-400 hover:text-red-500 hover:bg-red-50 flex items-center justify-center transition-colors">
+              <i class="fa-regular fa-trash-can text-xs"></i>
+            </button>
+          </div>
+        `;
+      });
+
+      roomsListContainer.innerHTML = html;
+
+      // クリックイベント: 上下並び替え
+      roomsListContainer.querySelectorAll('.btn-room-up').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          const idx = parseInt(btn.getAttribute('data-move-up'), 10);
+          if (idx > 0) {
+            const list = getStoredRooms();
+            const temp = list[idx];
+            list[idx] = list[idx - 1];
+            list[idx - 1] = temp;
+            saveStoredRooms(list);
+            renderRoomsList();
+          }
+        });
+      });
+
+      roomsListContainer.querySelectorAll('.btn-room-down').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          const idx = parseInt(btn.getAttribute('data-move-down'), 10);
+          const list = getStoredRooms();
+          if (idx < list.length - 1) {
+            const temp = list[idx];
+            list[idx] = list[idx + 1];
+            list[idx + 1] = temp;
+            saveStoredRooms(list);
+            renderRoomsList();
+          }
+        });
+      });
+
+      // クリックイベント: 切り替え
+      roomsListContainer.querySelectorAll('.select-room-item').forEach(el => {
+        el.addEventListener('click', () => {
+          const targetId = el.getAttribute('data-room-id');
+          if (targetId && targetId !== currentRoomId) {
+            switchRoom(targetId);
+          }
+          roomsModal.classList.add('hidden');
+        });
+      });
+
+      // クリックイベント: 削除
+      roomsListContainer.querySelectorAll('.btn-delete-room').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          const targetId = btn.getAttribute('data-delete-room-id');
+          let currentList = getStoredRooms();
+          if (currentList.length <= 1) {
+            showToast('すべてのルームを削除することはできません');
+            return;
+          }
+          currentList = currentList.filter(x => x.id !== targetId);
+          saveStoredRooms(currentList);
+
+          if (targetId === currentRoomId) {
+            switchRoom(currentList[0].id);
+          } else {
+            renderRoomsList();
+          }
+          showToast('ルーム履歴を削除しました');
+        });
+      });
+    }
+
+    // ルームモーダルの開閉と追加
+    document.getElementById('btnOpenRoomsModal').addEventListener('click', () => {
+      renderRoomsList();
+      inputNewRoomKey.value = '';
+      roomsModal.classList.remove('hidden');
+    });
+
+    document.getElementById('btnCloseRoomsModal').addEventListener('click', () => {
+      roomsModal.classList.add('hidden');
+    });
+
+    document.getElementById('btnAddRoomSubmit').addEventListener('click', () => {
+      const rawVal = inputNewRoomKey.value.trim();
+      const clean = rawVal.replace(/[^a-zA-Z0-9_-]/g, '');
+      if (!clean) {
+        showToast('半角英数字・ハイフンで入力してください');
+        return;
+      }
+      recordCurrentRoom(clean, clean);
+      switchRoom(clean);
+      roomsModal.classList.add('hidden');
+    });
+
+    // 共有モーダル
+    const btnShareRoom = document.getElementById('btnShareRoom');
+    if (btnShareRoom) {
+      btnShareRoom.addEventListener('click', () => {
+        let base = window.location.origin + window.location.pathname;
+        let shareUrl = `${base}?room=${encodeURIComponent(currentRoomId)}`;
+        const shareInput = document.getElementById('shareUrlInput');
+        if (shareInput) shareInput.value = shareUrl;
+        if (shareModal) shareModal.classList.remove('hidden');
+      });
+    }
+
+    const btnCloseShareModal = document.getElementById('btnCloseShareModal');
+    if (btnCloseShareModal) {
+      btnCloseShareModal.addEventListener('click', () => {
+        if (shareModal) shareModal.classList.add('hidden');
+      });
+    }
+
+    const btnCopyShareUrl = document.getElementById('btnCopyShareUrl');
+    if (btnCopyShareUrl) {
+      btnCopyShareUrl.addEventListener('click', () => {
+        const input = document.getElementById('shareUrlInput');
+        if (input) {
+          input.select();
+          document.execCommand('copy');
+        }
+        showToast('共有リンクをコピーしました！');
+        if (shareModal) shareModal.classList.add('hidden');
+      });
+    }
+
+    // 精算サマリー計算（チャット応答・LINE文面生成共通）
+    function getSettlementSummaryData() {
+      let netP1Balance = 0;
+      const currentMonthPrefix = `${currentYear}-${String(currentMonth + 1).padStart(2, '0')}`;
+      let monthTotal = 0;
+      let monthP1Share = 0;
+      let monthP2Share = 0;
+      let monthCount = 0;
+
+      expenses.forEach(item => {
+        const amt = Number(item.amount) || 0;
+        const payer = item.payer;
+
+        let p1Share = 0;
+        let p2Share = 0;
+
+        if (item.splitType === 'custom') {
+          if (typeof item.payerShare === 'number') {
+            const pShare = Math.min(amt, Math.max(0, item.payerShare));
+            const oShare = amt - pShare;
+            if (payer === 'p1') {
+              p1Share = pShare;
+              p2Share = oShare;
+            } else {
+              p2Share = pShare;
+              p1Share = oShare;
+            }
+          } else {
+            const extraPayer = item.extraPayer || 'p1';
+            const extraAmt = Math.min(amt, Math.max(0, Number(item.extraAmount) || 0));
+            const baseRemainder = amt - extraAmt;
+            const halfBase = baseRemainder / 2;
+            if (extraPayer === 'p1') {
+              p1Share = halfBase + extraAmt;
+              p2Share = halfBase;
+            } else {
+              p2Share = halfBase + extraAmt;
+              p1Share = halfBase;
+            }
+          }
+        } else {
+          p1Share = amt / 2;
+          p2Share = amt / 2;
+        }
+
+        if (item.date && item.date.startsWith(currentMonthPrefix)) {
+          monthTotal += amt;
+          monthP1Share += p1Share;
+          monthP2Share += p2Share;
+          monthCount += 1;
+        }
+
+        if (payer === 'p1') {
+          netP1Balance += (amt - p1Share);
+        } else {
+          netP1Balance -= (amt - p2Share);
+        }
+      });
+
+      const p1Net = Math.round(netP1Balance);
+      let settleMsg = '差額なし (¥0)';
+      if (p1Net > 0) {
+        settleMsg = `${settings.p2Name} → ${settings.p1Name} へ【¥${p1Net.toLocaleString()}】`;
+      } else if (p1Net < 0) {
+        settleMsg = `${settings.p1Name} → ${settings.p2Name} へ【¥${Math.abs(p1Net).toLocaleString()}】`;
+      }
+
+      let base = window.location.origin + window.location.pathname;
+      let shareUrl = `${base}?room=${encodeURIComponent(currentRoomId)}`;
+
+      const lineText = `【${settings.appTitle || '割り勘・精算状況'}】\n` +
+        `■ 精算内容: ${settleMsg}\n` +
+        `■ 今月の総利用額: ¥${monthTotal.toLocaleString()}\n` +
+        `（${settings.p1Name} 負担額: ¥${Math.round(monthP1Share).toLocaleString()} / ${settings.p2Name} 負担額: ¥${Math.round(monthP2Share).toLocaleString()}）\n\n` +
+        `精算ノートURL:\n${shareUrl}`;
+
+      return {
+        p1Net,
+        settleMsg,
+        monthTotal,
+        monthP1Share: Math.round(monthP1Share),
+        monthP2Share: Math.round(monthP2Share),
+        monthCount,
+        lineText
+      };
+    }
+
+    // ===== AIアシスタント用: 会計データ集計ヘルパー =====
+    let geminiHistory = [];
+    let aiSending = false;
+
+    function computeItemShares(item) {
+      const amt = Number(item.amount) || 0;
+      let p1Share = 0;
+      let p2Share = 0;
+      if (item.splitType === 'custom') {
+        if (typeof item.payerShare === 'number') {
+          const pShare = Math.min(amt, Math.max(0, item.payerShare));
+          const oShare = amt - pShare;
+          if (item.payer === 'p1') { p1Share = pShare; p2Share = oShare; }
+          else { p2Share = pShare; p1Share = oShare; }
+        } else {
+          const extraPayer = item.extraPayer || 'p1';
+          const extraAmt = Math.min(amt, Math.max(0, Number(item.extraAmount) || 0));
+          const halfBase = (amt - extraAmt) / 2;
+          if (extraPayer === 'p1') { p1Share = halfBase + extraAmt; p2Share = halfBase; }
+          else { p2Share = halfBase + extraAmt; p1Share = halfBase; }
+        }
+      } else {
+        p1Share = amt / 2;
+        p2Share = amt / 2;
+      }
+      return { p1Share, p2Share };
+    }
+
+    // Geminiへ渡すための、アプリ内会計データのスナップショット（テキスト形式）
+    function buildAccountingContextText() {
+      const summary = getSettlementSummaryData();
+      const monthPrefix = `${currentYear}-${String(currentMonth + 1).padStart(2, '0')}`;
+      let totalAll = 0;
+      let p1Paid = 0;
+      let p2Paid = 0;
+      let cashTotal = 0;
+      let creditTotal = 0;
+      const monthByTitle = {};
+
+      expenses.forEach(item => {
+        const amt = Number(item.amount) || 0;
+        totalAll += amt;
+        if (item.payer === 'p1') p1Paid += amt; else p2Paid += amt;
+        if (item.method === 'credit') creditTotal += amt; else cashTotal += amt;
+        if (item.date && item.date.startsWith(monthPrefix)) {
+          const key = item.title || '（無題）';
+          monthByTitle[key] = (monthByTitle[key] || 0) + amt;
+        }
+      });
+
+      const sorted = [...expenses].sort((a, b) =>
+        String(b.date || '').localeCompare(String(a.date || '')) || ((b.createdAt || 0) - (a.createdAt || 0)));
+      const cap = 200;
+      const lines = sorted.slice(0, cap).map(item => {
+        const shares = computeItemShares(item);
+        const payerName = item.payer === 'p1' ? settings.p1Name : settings.p2Name;
+        const methodLabel = item.method === 'credit' ? 'クレジット' : '現金';
+        const splitLabel = item.splitType === 'custom'
+          ? `個別負担（${settings.p1Name} ¥${Math.round(shares.p1Share).toLocaleString()} / ${settings.p2Name} ¥${Math.round(shares.p2Share).toLocaleString()}）`
+          : '折半';
+        return `${item.date || ''}｜${item.title || '（無題）'}｜¥${(Number(item.amount) || 0).toLocaleString()}｜立替: ${payerName}｜${methodLabel}｜${splitLabel}`;
+      });
+
+      const monthRanking = Object.entries(monthByTitle)
+        .sort((a, b) => b[1] - a[1])
+        .slice(0, 10)
+        .map(([t, v]) => `${t}: ¥${v.toLocaleString()}`)
+        .join('、');
+
+      return [
+        `アプリ名: ${settings.appTitle || '精算ノート'}`,
+        `参加者: ${settings.p1Name}（p1）と${settings.p2Name}（p2）`,
+        `ルームID: ${currentRoomId}`,
+        `今日: ${formatDateKey(new Date())}／表示中の月: ${currentYear}年${currentMonth + 1}月`,
+        '【精算サマリー（全期間）】',
+        `精算内容: ${summary.settleMsg}`,
+        `登録明細: 全${expenses.length}件／総額 ¥${totalAll.toLocaleString()}`,
+        `${settings.p1Name}の立替合計: ¥${p1Paid.toLocaleString()}／${settings.p2Name}の立替合計: ¥${p2Paid.toLocaleString()}`,
+        `現金合計: ¥${cashTotal.toLocaleString()}／クレジット合計: ¥${creditTotal.toLocaleString()}`,
+        `【${currentYear}年${currentMonth + 1}月のまとめ】`,
+        `件数: ${summary.monthCount}件／総額 ¥${summary.monthTotal.toLocaleString()}`,
+        `${settings.p1Name}の負担: ¥${summary.monthP1Share.toLocaleString()}／${settings.p2Name}の負担: ¥${summary.monthP2Share.toLocaleString()}`,
+        `項目別（今月・金額順）: ${monthRanking || 'なし'}`,
+        `【明細一覧（新しい順${expenses.length > cap ? '・直近' + cap + '件のみ' : ''}）】`,
+        lines.join('\n') || '（明細はまだありません）'
+      ].join('\n');
+    }
+
+    function updateAiStatusBar() {
+      const dot = document.getElementById('aiStatusDot');
+      const label = document.getElementById('aiStatusText');
+      if (!dot || !label) return;
+      if (geminiReady) {
+        dot.className = 'inline-block w-1.5 h-1.5 rounded-full bg-emerald-500';
+        label.textContent = `Gemini連携モード（${GEMINI_MODEL_NAME}／精算データ参照中）`;
+      } else {
+        dot.className = 'inline-block w-1.5 h-1.5 rounded-full bg-amber-500';
+        label.textContent = 'ローカル集計モード（Gemini未接続でも基本集計は使えます）';
+      }
+    }
+
+    // AIアシスタントチャットページ操作
+    const aiChatPage = document.getElementById('aiChatPage');
+    const aiChatMessages = document.getElementById('aiChatMessages');
+    const aiChatForm = document.getElementById('aiChatForm');
+    const aiChatInput = document.getElementById('aiChatInput');
+    let chatInitialized = false;
+
+    function openAiChatPage() {
+      const subtitleEl = document.getElementById('aiChatRoomSubtitle');
+      if (subtitleEl) {
+        subtitleEl.textContent = `ルーム: ${currentRoomId}（${settings.p1Name}・${settings.p2Name}）`;
+      }
+      updateAiStatusBar();
+      if (!chatInitialized) {
+        resetAiChatHistory();
+        chatInitialized = true;
+      }
+      aiChatPage.classList.remove('hidden');
+    }
+
+    function closeAiChatPage() {
+      aiChatPage.classList.add('hidden');
+    }
+
+    function resetAiChatHistory() {
+      aiChatMessages.innerHTML = '';
+      geminiHistory = [];
+      updateAiStatusBar();
+      appendAiMessage(
+        `こんにちは！精算ノートのAIアシスタントです💬\n` +
+        `現在の「${settings.p1Name}」と「${settings.p2Name}」の立替データをもとに、差額の確認や今月のまとめ、LINE共有文面の作成などをお手伝いします。\n\n` +
+        `下のボタンかメッセージ欄から気軽に話しかけてください！`
+      );
+      appendAiMessage(geminiReady
+        ? `いまはGemini（${GEMINI_MODEL_NAME}）と連携中です。会計データをもとに、自由な質問にもお答えできます✨`
+        : 'いまはローカル集計モードです。Gemini連携が有効になると、自由な質問にもお答えできるようになります。');
+    }
+
+    function appendUserMessage(text) {
+      const wrapper = document.createElement('div');
+      wrapper.className = 'flex justify-end';
+      wrapper.innerHTML = `
+        <div class="max-w-[82%] bg-emerald-600 text-white rounded-2xl rounded-br-sm px-3.5 py-2.5 text-xs font-medium leading-relaxed shadow-xs whitespace-pre-wrap">${escapeHtml(text)}</div>
+      `;
+      aiChatMessages.appendChild(wrapper);
+      aiChatMessages.scrollTop = aiChatMessages.scrollHeight;
+    }
+
+    function appendAiMessage(text, copyableText = null) {
+      const wrapper = document.createElement('div');
+      wrapper.className = 'flex items-start gap-2';
+
+      let copyBtnHtml = '';
+      if (copyableText) {
+        copyBtnHtml = `
+          <div class="mt-2 pt-2 border-t border-slate-100">
+            <button type="button" class="btn-chat-copy w-full py-1.5 px-2.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200 rounded-lg text-[11px] font-bold flex items-center justify-center gap-1.5 transition-colors">
+              <i class="fa-regular fa-copy"></i>
+              <span>この文面をコピーする</span>
+            </button>
+          </div>
+        `;
+      }
+
+      wrapper.innerHTML = `
+        <div class="w-7 h-7 rounded-full bg-emerald-100 text-emerald-700 flex items-center justify-center text-xs shrink-0 mt-0.5 border border-emerald-200">
+          <i class="fa-solid fa-robot"></i>
+        </div>
+        <div class="max-w-[82%] bg-white text-slate-800 border border-slate-200 rounded-2xl rounded-tl-sm px-3.5 py-2.5 text-xs leading-relaxed shadow-2xs">
+          <div class="whitespace-pre-wrap">${escapeHtml(text)}</div>
+          ${copyBtnHtml}
+        </div>
+      `;
+
+      if (copyableText) {
+        const copyBtn = wrapper.querySelector('.btn-chat-copy');
+        if (copyBtn) {
+          copyBtn.addEventListener('click', () => {
+            const temp = document.createElement('textarea');
+            temp.value = copyableText;
+            document.body.appendChild(temp);
+            temp.select();
+            document.execCommand('copy');
+            document.body.removeChild(temp);
+            showToast('コピーしました！');
+          });
+        }
+      }
+
+      aiChatMessages.appendChild(wrapper);
+      aiChatMessages.scrollTop = aiChatMessages.scrollHeight;
+    }
+
+    function showAiTypingIndicator() {
+      const indicator = document.createElement('div');
+      indicator.id = 'aiTypingIndicator';
+      indicator.className = 'flex items-start gap-2';
+      indicator.innerHTML = `
+        <div class="w-7 h-7 rounded-full bg-emerald-100 text-emerald-700 flex items-center justify-center text-xs shrink-0 mt-0.5 border border-emerald-200">
+          <i class="fa-solid fa-robot"></i>
+        </div>
+        <div class="bg-white text-slate-400 border border-slate-200 rounded-2xl rounded-tl-sm px-3.5 py-2.5 text-xs font-bold shadow-2xs flex items-center gap-1.5">
+          <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-bounce"></span>
+          <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-bounce" style="animation-delay: 0.15s"></span>
+          <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-bounce" style="animation-delay: 0.3s"></span>
+        </div>
+      `;
+      aiChatMessages.appendChild(indicator);
+      aiChatMessages.scrollTop = aiChatMessages.scrollHeight;
+    }
+
+    function removeAiTypingIndicator() {
+      const el = document.getElementById('aiTypingIndicator');
+      if (el) el.remove();
+    }
+
+    // ローカル集計による応答（Gemini未接続時・接続エラー時のフォールバック）
+    async function generateLocalAssistantResponse(userMessage) {
+      const summary = getSettlementSummaryData();
+      const msg = userMessage.trim();
+
+      if (msg.includes('LINE') || msg.includes('ライン') || msg.includes('文面') || msg.includes('コピー')) {
+        return {
+          text: `LINE送信用の精算メッセージを作成しました！下のボタンからそのままコピーできます。\n\n${summary.lineText}`,
+          copyableText: summary.lineText
+        };
+      }
+
+      if (msg.includes('差額') || msg.includes('精算') || msg.includes('いくら')) {
+        return {
+          text: `現在の精算状況をお伝えしますね。\n\n` +
+            `■ 精算内容：${summary.settleMsg}\n` +
+            `■ 登録明細数：全${expenses.length}件\n\n` +
+            `LINEで送りたい場合は「LINE文面を作って」とお声がけください！`,
+          copyableText: null
+        };
+      }
+
+      if (msg.includes('今月') || msg.includes('まとめ') || msg.includes('合計')) {
+        return {
+          text: `${currentYear}年${currentMonth + 1}月の支出まとめです📊\n\n` +
+            `・今月の支払い件数：${summary.monthCount}件\n` +
+            `・今月の総利用額：¥${summary.monthTotal.toLocaleString()}\n` +
+            `・${settings.p1Name}の負担合計：¥${summary.monthP1Share.toLocaleString()}\n` +
+            `・${settings.p2Name}の負担合計：¥${summary.monthP2Share.toLocaleString()}`,
+          copyableText: null
+        };
+      }
+
+      return {
+        text: `「${msg}」ですね！\n` +
+          `現在、精算ノートのチャット画面（プレビュー版）が正常に動作しています。今後FirebaseとGeminiを連携させると、明細の自動分析や自然な会話での家計アドバイスも可能になります。\n\n` +
+          `今は「現在の差額は？」「今月の支出まとめ」「LINE文面を作成」などをお試しいただけます！`,
+        copyableText: null
+      };
+    }
+
+    // Gemini（Firebase AI Logic）による応答: 最新の会計データと会話履歴を添えて送信
+    async function generateGeminiAssistantResponse(userMessage) {
+      const summary = getSettlementSummaryData();
+      const contextText = buildAccountingContextText();
+      const historyText = geminiHistory.slice(-8)
+        .map(h => `${h.role === 'user' ? 'ユーザー' : 'アシスタント'}: ${h.text}`)
+        .join('\n');
+      const prompt =
+        `【アプリの会計データ（最新）】\n${contextText}\n\n` +
+        `【これまでの会話】\n${historyText || '（なし）'}\n\n` +
+        `【ユーザーの新しい質問】\n${userMessage}`;
+      const result = await geminiModel.generateContent(prompt);
+      const text = result.response.text();
+      if (!text) throw new Error('Geminiから空の応答が返りました');
+      const wantsLine = /LINE|ライン|文面|コピー/.test(userMessage);
+      return { text, copyableText: wantsLine ? summary.lineText : null };
+    }
+
+    async function generateAiAssistantResponse(userMessage) {
+      if (geminiReady && geminiModel) {
+        try {
+          return await generateGeminiAssistantResponse(userMessage);
+        } catch (e) {
+          console.warn('Gemini応答に失敗しました。ローカル集計に切り替えます', e);
+          geminiReady = false;
+          updateAiStatusBar();
+          const local = await generateLocalAssistantResponse(userMessage);
+          return {
+            text: `（Geminiに接続できなかったため、ローカル集計でお答えします）\n\n${local.text}`,
+            copyableText: local.copyableText
+          };
+        }
+      }
+      return generateLocalAssistantResponse(userMessage);
+    }
+
+    async function handleSendAiChat(rawText) {
+      const text = rawText.trim();
+      if (!text || aiSending) return;
+      aiSending = true;
+
+      appendUserMessage(text);
+      aiChatInput.value = '';
+      const sendBtn = document.getElementById('btnSendAiChat');
+      if (sendBtn) sendBtn.disabled = true;
+      showAiTypingIndicator();
+
+      try {
+        const reply = await generateAiAssistantResponse(text);
+        geminiHistory.push({ role: 'user', text });
+        geminiHistory.push({ role: 'model', text: reply.text });
+        removeAiTypingIndicator();
+        appendAiMessage(reply.text, reply.copyableText);
+      } catch (e) {
+        console.error('AI応答エラー', e);
+        removeAiTypingIndicator();
+        appendAiMessage('うまく回答できませんでした。少し時間をおいて、もう一度お試しください。');
+      } finally {
+        aiSending = false;
+        if (sendBtn) sendBtn.disabled = false;
+      }
+    }
+
+    document.getElementById('btnOpenAiChat').addEventListener('click', openAiChatPage);
+    document.getElementById('btnCloseAiChat').addEventListener('click', closeAiChatPage);
+    document.getElementById('btnClearAiChat').addEventListener('click', () => {
+      resetAiChatHistory();
+      showToast('チャット履歴をクリアしました');
+    });
+
+    aiChatForm.addEventListener('submit', (e) => {
+      e.preventDefault();
+      handleSendAiChat(aiChatInput.value);
+    });
+
+    document.querySelectorAll('.ai-quick-chip').forEach(chip => {
+      chip.addEventListener('click', () => {
+        const promptText = chip.getAttribute('data-quick-prompt');
+        if (promptText) handleSendAiChat(promptText);
+      });
+    });
+
+    // カレンダー月移動
+    document.getElementById('btnPrevMonth').addEventListener('click', () => {
+      currentMonth--;
+      if (currentMonth < 0) {
+        currentMonth = 11;
+        currentYear--;
+      }
+      renderCalendar();
+      calculateSettlements();
+    });
+
+    document.getElementById('btnNextMonth').addEventListener('click', () => {
+      currentMonth++;
+      if (currentMonth > 11) {
+        currentMonth = 0;
+        currentYear++;
+      }
+      renderCalendar();
+      calculateSettlements();
+    });
+
+    document.getElementById('btnToday').addEventListener('click', () => {
+      currentYear = today.getFullYear();
+      currentMonth = today.getMonth();
+      selectedDateStr = formatDateKey(today);
+      renderCalendar();
+      renderDayExpenses(selectedDateStr);
+      calculateSettlements();
+    });
+
+    document.getElementById('btnOpenAddForm').addEventListener('click', () => openExpenseModal());
+    document.getElementById('btnCloseExpenseModal').addEventListener('click', () => closeExpenseModal());
+
+    // ユーティリティ
+    function formatDateKey(date) {
+      const y = date.getFullYear();
+      const m = String(date.getMonth() + 1).padStart(2, '0');
+      const d = String(date.getDate()).padStart(2, '0');
+      return `${y}-${m}-${d}`;
+    }
+
+    function escapeHtml(str) {
+      if (!str) return '';
+      return String(str)
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
+    }
+
+    function showToast(msg) {
+      const toast = document.getElementById('toast');
+      const text = document.getElementById('toastMessage');
+      text.textContent = msg;
+      toast.classList.remove('opacity-0', 'pointer-events-none');
+      toast.classList.add('opacity-100');
+      setTimeout(() => {
+        toast.classList.add('opacity-0', 'pointer-events-none');
+        toast.classList.remove('opacity-100');
+      }, 2200);
+    }
+
+    // 起動
+    (function setupAppIcon() {
+      try {
+        const canvas = document.createElement('canvas');
+        canvas.width = 180;
+        canvas.height = 180;
+        const ctx = canvas.getContext('2d');
+        ctx.fillStyle = '#10b981';
+        ctx.fillRect(0, 0, 180, 180);
+        ctx.fillStyle = '#ffffff';
+        ctx.font = 'bold 84px sans-serif';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText('¥', 90, 94);
+        const iconLink = document.getElementById('appleTouchIcon');
+        if (iconLink) iconLink.href = canvas.toDataURL('image/png');
+      } catch (e) {}
+    })();
+
+    loadCache();
+    renderAll();
+    initCloudSync();
+
+  </script>
+</body>
+</html>
