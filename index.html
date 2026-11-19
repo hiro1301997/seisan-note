@@ -2057,7 +2057,18 @@
         `【アプリの会計データ（最新）】\n${contextText}\n\n` +
         `【これまでの会話】\n${historyText || '（なし）'}\n\n` +
         `【ユーザーの新しい質問】\n${userMessage}`;
-      const result = await geminiModel.generateContent(prompt);
+      let result = null;
+      let lastError = null;
+      for (let attempt = 0; attempt < 3; attempt++) {
+        try {
+          result = await geminiModel.generateContent(prompt);
+          break;
+        } catch (err) {
+          lastError = err;
+          if (attempt < 2) await new Promise(r => setTimeout(r, 2000 * (attempt + 1)));
+        }
+      }
+      if (!result) throw lastError;
       const text = result.response.text();
       if (!text) throw new Error('Geminiから空の応答が返りました');
       const wantsLine = /LINE|ライン|文面|コピー/.test(userMessage);
