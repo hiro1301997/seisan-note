@@ -2074,7 +2074,7 @@
           updateAiStatusBar();
           const local = await generateLocalAssistantResponse(userMessage);
           return {
-            text: `（Geminiに接続できなかったため、ローカル集計でお答えします）\n\n${local.text}`,
+            text: `（Geminiに接続できなかったため、ローカル集計でお答えします）\n［診断情報: ${String(e && e.message ? e.message : e)}］\n\n${local.text}`,
             copyableText: local.copyableText
           };
         }
