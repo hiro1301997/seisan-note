@@ -2061,11 +2061,14 @@
       let lastError = null;
       for (let attempt = 0; attempt < 3; attempt++) {
         try {
-          result = await geminiModel.generateContent(prompt);
+          result = await Promise.race([
+            geminiModel.generateContent(prompt),
+            new Promise((_, reject) => setTimeout(() => reject(new Error('Gemini応答がタイムアウトしました')), 20000))
+          ]);
           break;
         } catch (err) {
           lastError = err;
-          if (attempt < 2) await new Promise(r => setTimeout(r, 2000 * (attempt + 1)));
+          if (attempt < 2) await new Promise(r => setTimeout(r, 1500 * (attempt + 1)));
         }
       }
       if (!result) throw lastError;
