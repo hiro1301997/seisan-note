@@ -566,13 +566,17 @@
 
     const AI_SYSTEM_INSTRUCTION = [
       'あなたは「精算ノート」という2人用の立て替え・割り勘アプリのAIアシスタントです。',
-      '渡されるアプリの会計データをもとに、日本語で簡潔かつ正確に答えてください。',
+      '渡されるアプリの会計データをもとに、日本語で答えてください。',
+      '話し方のルール:',
+      '・親しい友だちに話しかけるような、明るくフレンドリーな口調で答えてください。堅い敬語や事務的な言い回しは避け、やわらかい「です・ます」調を基本に、語尾や相づちで親しみやすさを出してください。',
+      '・絵文字は雰囲気に合わせて控えめに使ってOKです（1回の返信に0〜2個程度）。',
+      '・まず結論や大事な数字を伝え、そのあと必要なら補足する、読みやすい構成にしてください。',
       'ルール:',
       '・金額や件数は、渡された会計データの数字だけを使ってください。データにない金額を推測したり創作したりしないでください。',
       '・精算の差額は「誰が誰へいくら払えばよいか」を明確に述べてください。',
-      '・LINE用文面を求められたら、そのままコピーして送れる丁寧な文面を作成してください。',
+      '・LINE用文面を求められたら、そのままコピーして送れる、やわらかく丁寧な文面を作成してください。',
       '・データにない一般的な家計アドバイスには一般論として答えてよいですが、アプリの数字と混同しないでください。',
-      '・スマホで読みやすいよう短めの段落や箇条書きでまとめ、金額は¥表記と3桁区切りを使ってください。'
+      '・スマホで読みやすいよう短めの段落や箇条書きでまとめ、金額は¥表記と3桁区切りを使ってください。装飾は大事な数字に絞ってください。'
     ].join('\n');
 
     let db = null;
@@ -1918,13 +1922,13 @@
       geminiHistory = [];
       updateAiStatusBar();
       appendAiMessage(
-        `こんにちは！精算ノートのAIアシスタントです💬\n` +
-        `現在の「${settings.p1Name}」と「${settings.p2Name}」の立替データをもとに、差額の確認や今月のまとめ、LINE共有文面の作成などをお手伝いします。\n\n` +
-        `下のボタンかメッセージ欄から気軽に話しかけてください！`
+        `こんにちは！精算ノートのAIアシスタントだよ💬\n` +
+        `「${settings.p1Name}」と「${settings.p2Name}」の立替データをもとに、差額の確認や今月のまとめ、LINE共有文面の作成なんかをお手伝いするね。\n\n` +
+        `下のボタンかメッセージ欄から、気軽に話しかけてね！`
       );
       appendAiMessage(geminiReady
-        ? `いまはGemini（${GEMINI_MODEL_NAME}）と連携中です。会計データをもとに、自由な質問にもお答えできます✨`
-        : 'いまはローカル集計モードです。Gemini連携が有効になると、自由な質問にもお答えできるようになります。');
+        ? `いまはGemini（${GEMINI_MODEL_NAME}）と連携中だよ。会計データをもとに答えるから、お金のことなら何でも聞いてね✨`
+        : 'いまはローカル集計モードだよ。基本的な集計なら任せてね。');
     }
 
     function appendUserMessage(text) {
@@ -1935,6 +1939,19 @@
       `;
       aiChatMessages.appendChild(wrapper);
       aiChatMessages.scrollTop = aiChatMessages.scrollHeight;
+    }
+
+    function renderAiMarkdown(text) {
+      return escapeHtml(String(text ?? ''))
+        .split('\n')
+        .map(line => line
+          .replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>')
+          .replace(/`([^`]+)`/g, '<code class="bg-slate-100 rounded px-1 py-0.5 text-[11px]">$1</code>')
+          .replace(/^#{1,6}\s*(.+)$/, '<strong>$1</strong>')
+          .replace(/^\s*[-*]\s+/, '・')
+          .replace(/\*\*/g, '')
+        )
+        .join('\n');
     }
 
     function appendAiMessage(text, copyableText = null) {
@@ -1958,7 +1975,7 @@
           <i class="fa-solid fa-robot"></i>
         </div>
         <div class="max-w-[82%] bg-white text-slate-800 border border-slate-200 rounded-2xl rounded-tl-sm px-3.5 py-2.5 text-xs leading-relaxed shadow-2xs">
-          <div class="whitespace-pre-wrap">${escapeHtml(text)}</div>
+          <div class="whitespace-pre-wrap">${renderAiMarkdown(text)}</div>
           ${copyBtnHtml}
         </div>
       `;
